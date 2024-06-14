@@ -1,0 +1,171 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using SolaceWebClient.Services
+@inject SolacePublishService PublishService
+@inject SolaceSubscribeService SubscribeService
+@inject IToastService toastService
+@implements IDisposable
+
+<h3>Solace PubSub+</h3>
+
+<div class="form-container">
+    <div class="form-section">
+        <h4>Publish Message</h4>
+        <div class="form-group">
+            <div class="input-with-checkbox">
+                <div class="input-container">
+                    <label>Hostname:Port</label>
+                    <input @bind="publishHost" name="publishHost" autocomplete="on" placeholder="hostname:port" />
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" @bind="publishUseTcps" id="publishUseTcps" />
+                    <label for="publishUseTcps">TCPS</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" @bind="publishSslVerify" id="publishSslVerify" />
+                    <label for="publishSslVerify">SSL Verify</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>VPN Name</label>
+            <input @bind="publishVpnName" name="publishVpnName" autocomplete="on" placeholder="VPN Name" />
+        </div>
+        <div class="form-group">
+            <label>Username</label>
+            <input @bind="publishUsername" name="publishUsername" autocomplete="on" placeholder="Username" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input @bind="publishPassword" name="publishPassword" type="password" autocomplete="on" placeholder="Password" />
+        </div>
+        <div class="form-group">
+            <label>Topic</label>
+            <input @bind="publishTopic" name="publishTopic" autocomplete="on" placeholder="Topic" />
+        </div>
+        <div class="form-group">
+            <label>Message</label>
+            <textarea @bind="publishMessage" name="publishMessage" autocomplete="on" placeholder="Message"></textarea>
+        </div>
+        <button class="btn btn-primary" @onclick="ConnectAndPublish">Publish</button>
+    </div>
+
+    <div class="form-section">
+        <h4>Subscribe to Topic</h4>
+        <div class="form-group">
+            <div class="input-with-checkbox">
+                <div class="input-container">
+                    <label>Hostname:Port</label>
+                    <input @bind="subscribeHost" name="subscribeHost" autocomplete="on" placeholder="hostname:port" />
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" @bind="subscribeUseTcps" id="subscribeUseTcps" />
+                    <label for="subscribeUseTcps">TCPS</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" @bind="subscribeSslVerify" id="subscribeSslVerify" />
+                    <label for="subscribeSslVerify">SSL Verify</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>VPN Name</label>
+            <input @bind="subscribeVpnName" name="subscribeVpnName" autocomplete="on" placeholder="VPN Name" />
+        </div>
+        <div class="form-group">
+            <label>Username</label>
+            <input @bind="subscribeUsername" name="subscribeUsername" autocomplete="on" placeholder="Username" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input @bind="subscribePassword" name="subscribePassword" type="password" autocomplete="on" placeholder="Password" />
+        </div>
+        <div class="form-group">
+            <label>Topic</label>
+            <input @bind="subscribeTopic" name="subscribeTopic" autocomplete="on" placeholder="Topic" />
+        </div>
+        <button class="btn btn-primary" @onclick="SubscribeToTopic">Subscribe</button>
+    </div>
+</div>
+
+<div>
+    <h4>Messages</h4>
+    <ul>
+        @foreach (var message in messages)
+        {
+            <li>@message</li>
+        }
+    </ul>
+</div>
+
+@code {
+    private string publishHost;
+    private string publishVpnName;
+    private string publishUsername;
+    private string publishPassword;
+    private string publishTopic;
+    private string publishMessage;
+    private bool publishUseTcps = true;
+    private bool publishSslVerify = true;
+    private string subscribeHost;
+    private string subscribeVpnName;
+    private string subscribeUsername;
+    private string subscribePassword;
+    private string subscribeTopic;
+    private bool subscribeSslVerify = true;
+    private bool subscribeUseTcps = true;
+
+    private List<string> messages = new List<string>();
+
+    private string FormatHost(string host, bool useTcps)
+    {
+        if (useTcps && !host.StartsWith("tcps://"))
+        {
+            return "tcps://" + host;
+        }
+        return host;
+    }
+
+    private void ConnectAndPublish()
+    {
+        try
+        {
+            string formattedHost = FormatHost(publishHost, publishUseTcps);
+            PublishService.PublishMessage(formattedHost, publishVpnName, publishUsername, publishPassword, publishTopic, publishMessage, publishSslVerify);
+            toastService.ShowSuccess("Successfully published message");
+        }
+        catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
+        {
+            toastService.ShowError($"Error publishing message: {ex.ErrorInfo}");
+        }
+    }
+
+    private async Task SubscribeToTopic()
+    {
+        try
+        {
+            string formattedHost = FormatHost(subscribeHost, subscribeUseTcps);
+            SubscribeService.SubscribeToTopic(formattedHost, subscribeVpnName, subscribeUsername, subscribePassword, subscribeTopic, subscribeSslVerify, message =>
+            {
+                InvokeAsync(() =>
+                {
+                    messages.Add(message);
+                    StateHasChanged();
+                });
+            });
+            toastService.ShowSuccess("Subscription started");
+        }
+        catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
+        {
+            toastService.ShowError($"Error starting Subscription: {ex.ErrorInfo}");
+        }
+
+        
+    }
+
+    public void Dispose()
+    {
+        SubscribeService.Dispose();
+        PublishService.Dispose();
+    }
+}

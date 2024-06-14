@@ -1,0 +1,200 @@
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light text color */
+}
+
+a, .btn-link {
+    color: #00C895; /* Akzentfarbe */
+}
+
+.btn-primary {
+    color: #121212; /* Dark background */
+    background-color: #00C895; /* Akzentfarbe */
+    border-color: #00C895; /* Akzentfarbe */
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem #121212, 0 0 0 0.25rem #00C895; /* Dark background and Akzentfarbe */
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred.";
+    color: #e50000; /* Error message color */
+}
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+.navbar {
+    background-color: #1c1c1c; /* Darker navbar background */
+}
+
+.nav-link {
+    color: #e0e0e0; /* Light text color for nav links */
+}
+
+    .nav-link:hover {
+        color: #00C895; /* Akzentfarbe on hover */
+    }
+
+.navbar-brand {
+    color: #00C895; /* Akzentfarbe for brand */
+}
+
+.page {
+    background-color: #121212; /* Dark background */
+}
+
+.top-row {
+    border-bottom: 1px solid #333; /* Light border */
+    background-color: #1c1c1c;
+}
+
+.nav-scrollable {
+    background-color: #1c1c1c; /* Darker nav background */
+    color: #e0e0e0; /* Light text color */
+}
+
+.main {
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light text color */
+}
+
+.article {
+    background-color: #1c1c1c; /* Darker background for articles */
+    color: #e0e0e0; /* Light text color */
+}
+
+.form-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.form-section {
+    background-color: #1c1c1c;
+    padding: 20px;
+    border-radius: 10px;
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #00C895;
+    }
+
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #333;
+        color: #e0e0e0;
+    }
+
+.btn-primary {
+    width: 100%;
+}
+
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Halbtransparentes Schwarz */
+    z-index: 9999; /* Stellen Sie sicher, dass das Overlay über allen anderen Elementen liegt */
+}
+
+.loading-message-delete {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1c1c1c;
+    padding: 20px;
+    border-radius: 8px;
+    color: #00C895;
+}
+
+.loading-message-browsing {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1c1c1c;
+    padding: 20px;
+    border-radius: 8px;
+    color: #00C895;
+}
+
+.toggle-icon {
+    display: inline-block;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+}
+
+    .toggle-icon.rotated {
+        transform: rotate(90deg);
+    }
+
+.table {
+    background-color: #1c1c1c; /* Dunkler Hintergrund */
+    color: #e0e0e0; /* Hellere Textfarbe */
+}
+
+    .table th,
+    .table td {
+        border-color: #333; /* Farbe der Tabellenlinien */
+    }
+
+    .table th {
+        background-color: #333; /* Farbe für Tabellenkopf */
+        color: #e0e0e0; /* Textfarbe für Tabellenkopf */
+    }
+
+
+.input-with-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.input-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.checkbox-container {
+    margin-left: 10px;
+    white-space: nowrap;
+}

@@ -1,0 +1,88 @@
+﻿@page "/semp"
+@using SolaceWebClient.Services
+@inject SEMPService SEMPService
+@inject IToastService toastService
+@inject NavigationManager Navigation
+
+<h3>SEMP API</h3>
+
+<div class="form-container">
+    <div class="form-section">
+        <h4>SEMP Configuration</h4>
+        <div class="form-group">
+            <div class="input-with-checkbox">
+                <div class="input-container">
+                    <label>URL</label>
+                    <input @bind="sempUrl" name="sempUrl" autocomplete="on" placeholder="URL" />
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" @bind="sempSslVerify" id="sempSslVerify" />
+                    <label for="sempSslVerify">SSL Verify</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Message VPN</label>
+            <input @bind="sempMessageVpn" name="sempMessageVpn" autocomplete="on" placeholder="Message VPN" />
+        </div>
+        <div class="form-group">
+            <label>Username</label>
+            <input @bind="sempUsername" name="sempUsername" autocomplete="on" placeholder="Username" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input @bind="sempPassword" name="sempPassword" type="password" autocomplete="on" placeholder="Password" />
+        </div>
+        <button class="btn btn-primary" @onclick="GetQueues">Get Queues</button>
+    </div>
+</div>
+
+<div>
+    <h4>Queues</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Queue Name</th>
+                <th>Browse</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var queue in queues)
+            {
+                <tr>
+                    <td>@queue</td>
+                    <td><button class="btn btn-secondary" @onclick="() => BrowseQueue(queue)">Browse Queue</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private string sempUrl;
+    private string sempMessageVpn;
+    private string sempUsername;
+    private string sempPassword;
+    private bool sempSslVerify = true;
+    private List<string> queues = new List<string>();
+
+    private async Task GetQueues()
+    {
+        try
+        {
+            var result = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
+            queues = result;
+            toastService.ShowSuccess("Queues retrieved successfully");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Error retrieving queues: {ex.Message}");
+        }
+    }
+
+    private void BrowseQueue(string queueName)
+    {
+        var uri = $"queue-browser?&vpn={sempMessageVpn}&queue={queueName}";
+        Navigation.NavigateTo(uri);
+    }
+}
