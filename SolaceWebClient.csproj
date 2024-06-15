@@ -23,4 +23,8 @@
     <PackageReference Include="SolaceSystems.Solclient.Messaging" Version="10.24.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="docs\" />
+  </ItemGroup>
+
 </Project>
