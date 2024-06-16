@@ -238,7 +238,16 @@
             queueName = queueValue;
         }
 
-        username = string.Empty;
+        if (queryParams.TryGetValue("username", out var usernameValue))
+        {
+            username = usernameValue;
+        }
+
+        if (queryParams.TryGetValue("hostname", out var hostnameValue))
+        {
+            host = hostnameValue;
+        }
+
         password = string.Empty;
     }
 }

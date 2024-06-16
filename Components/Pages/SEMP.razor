@@ -43,15 +43,17 @@
         <thead>
             <tr>
                 <th>Queue Name</th>
+                <th>Owner</th>
                 <th>Browse</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var queue in queues)
+            @foreach (var queue in getQueuesList)
             {
                 <tr>
-                    <td>@queue</td>
-                    <td><button class="btn btn-secondary" @onclick="() => BrowseQueue(queue)">Browse Queue</button></td>
+                    <td>@queue.queueName</td>
+                    <td>@queue.queueOwner</td>
+                    <td><button class="btn btn-secondary" @onclick="() => BrowseQueue(queue.queueName,queue.queueOwner)">Browse Queue</button></td>
                 </tr>
             }
         </tbody>
@@ -64,14 +66,23 @@
     private string sempUsername;
     private string sempPassword;
     private bool sempSslVerify = true;
-    private List<string> queues = new List<string>();
+    private List<SEMPService.GetQueuesDetails> getQueuesList = new List<SEMPService.GetQueuesDetails>();
+
+    private string hostname;
+    private int smfPort;
+    private int smfsPort;
+    private bool smfsEnabled;
 
     private async Task GetQueues()
     {
         try
         {
-            var result = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
-            queues = result;
+            var config = await SEMPService.GetListenerAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
+            smfsEnabled = config.SmfsEnabled;
+            smfPort = config.SmfPort;
+            smfsPort = config.SmfsPort;
+
+            getQueuesList = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
             toastService.ShowSuccess("Queues retrieved successfully");
         }
         catch (Exception ex)
@@ -80,9 +91,17 @@
         }
     }
 
-    private void BrowseQueue(string queueName)
+    private void BrowseQueue(string queueName, string queueOwner)
     {
-        var uri = $"queue-browser?&vpn={sempMessageVpn}&queue={queueName}";
+        string hostname = new Uri(sempUrl).Host;
+        if (smfsEnabled)
+        {
+            hostname = hostname + ":" + smfsPort;
+        } else
+        {
+            hostname = hostname + ":" + smfPort;
+        }
+        var uri = $"queue-browser?&vpn={sempMessageVpn}&hostname={hostname}&queue={queueName}&username={queueOwner}";
         Navigation.NavigateTo(uri);
     }
 }
