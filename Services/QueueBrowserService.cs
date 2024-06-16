@@ -56,7 +56,7 @@ namespace SolaceWebClient.Services
 
         
 
-        public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, string username, string password, string queueName, bool sslVerify)
+        public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, string username, string password, string queueName, bool sslVerify, int maxMessages)
         {
             _logger.LogInformation("Queue Browsing started.");
             List<MessageDetails> messages = new List<MessageDetails>();
@@ -91,7 +91,8 @@ namespace SolaceWebClient.Services
                     using (IBrowser browser = _session.CreateBrowser(queue, browserProps))
                     {
                         IMessage message;
-                        while ((message = await Task.Run(() => browser.GetNext())) != null)
+                        int messageCount = 0;
+                        while ((message = await Task.Run(() => browser.GetNext())) != null && messageCount < maxMessages)
                         {
                             //_logger.LogInformation("Message received: {message}", Encoding.UTF8.GetString(message.BinaryAttachment));
                             DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(message.SenderTimestamp);
@@ -129,6 +130,7 @@ namespace SolaceWebClient.Services
                                 UserProperties = keyValuePairs,
                                 DeliveryMode = message.DeliveryMode.ToString()
                             });
+                            messageCount++;
                         }
                     }
                 }
