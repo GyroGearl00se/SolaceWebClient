@@ -37,8 +37,15 @@
     </div>
 </div>
 
+
+
 <div>
     <h4>Queues</h4>
+
+    <input type="text" @bind="QueueNameFilterText" placeholder="Filter Queue Name..." @oninput="ApplyFilter" />
+    <input type="text" @bind="QueueOwnerFilterText" placeholder="Filter Queue Owner..." @oninput="ApplyFilter" />
+
+
     <table class="table">
         <thead>
             <tr>
@@ -48,7 +55,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var queue in getQueuesList)
+            @foreach (var queue in PagedQueues)
             {
                 <tr>
                     <td>@queue.queueName</td>
@@ -58,6 +65,10 @@
             }
         </tbody>
     </table>
+
+    <button @onclick="PreviousPage" disabled="@(!HasPreviousPage)">Previous</button>
+    <button @onclick="NextPage" disabled="@(!HasNextPage)">Next</button>
+
 </div>
 
 @code {
@@ -66,12 +77,31 @@
     private string sempUsername;
     private string sempPassword;
     private bool sempSslVerify = true;
-    private List<SEMPService.GetQueuesDetails> getQueuesList = new List<SEMPService.GetQueuesDetails>();
 
     private string hostname;
     private int smfPort;
     private int smfsPort;
     private bool smfsEnabled;
+
+    private List<SEMPService.GetQueuesDetails> Queues = new List<SEMPService.GetQueuesDetails>();
+    private List<SEMPService.GetQueuesDetails> FilteredQueues =>
+        string.IsNullOrEmpty(QueueNameFilterText) && string.IsNullOrEmpty(QueueOwnerFilterText) ?
+        Queues :
+        Queues.Where(q =>
+            (string.IsNullOrEmpty(QueueNameFilterText) || q.queueName.Contains(QueueNameFilterText, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(QueueOwnerFilterText) || q.queueOwner.Contains(QueueOwnerFilterText, StringComparison.OrdinalIgnoreCase))
+        ).ToList();
+    private List<SEMPService.GetQueuesDetails> PagedQueues => FilteredQueues.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+
+    private string QueueNameFilterText { get; set; }
+    private string QueueOwnerFilterText { get; set; }
+    
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 10;
+    private bool HasPreviousPage => CurrentPage > 1;
+    private bool HasNextPage => CurrentPage * PageSize < FilteredQueues.Count;
+
+
 
     private async Task GetQueues()
     {
@@ -82,12 +112,34 @@
             smfPort = config.SmfPort;
             smfsPort = config.SmfsPort;
 
-            getQueuesList = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
+            Queues = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
             toastService.ShowSuccess("Queues retrieved successfully");
         }
         catch (Exception ex)
         {
             toastService.ShowError($"Error retrieving queues: {ex.Message}");
+        }
+    }
+
+    private void ApplyFilter(ChangeEventArgs e)
+    {
+        CurrentPage = 1;
+        StateHasChanged();
+    }
+
+    private void PreviousPage()
+    {
+        if (HasPreviousPage)
+        {
+            CurrentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (HasNextPage)
+        {
+            CurrentPage++;
         }
     }
 

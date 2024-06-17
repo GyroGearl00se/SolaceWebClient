@@ -27,47 +27,63 @@ namespace SolaceWebClient.Services
 
         public async Task<List<GetQueuesDetails>> GetQueuesAsync(string url, string messageVpn, string username, string password, bool sslVerify)
         {
-            string requestUrl = $"{url}/SEMP/v2/config/msgVpns/{messageVpn}/queues";
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-            var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+            var getQueuesList = new List<GetQueuesDetails>();
+            string requestUrl = $"{url}/SEMP/v2/config/msgVpns/{messageVpn}/queues?count=100";
 
-            if (!sslVerify)
+            while (!string.IsNullOrEmpty(requestUrl))
             {
-                // Bypass SSL certificate validation
-                _httpClient.DefaultRequestHeaders.Add("IgnoreSslErrors", "true");
-            }
+                var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authToken);
 
-            HttpResponseMessage response;
-            try
-            {
-                response = await _httpClient.SendAsync(request);
-            }
-            catch (HttpRequestException e)
-            {
-                _logger.LogError($"Request error: {e.Message}");
-                throw;
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            var responseBody = await response.Content.ReadAsStringAsync();
-            List<GetQueuesDetails> getQueuesList = new List<GetQueuesDetails>();
-
-            using (JsonDocument doc = JsonDocument.Parse(responseBody))
-            {
-                foreach (var element in doc.RootElement.GetProperty("data").EnumerateArray())
+                if (!sslVerify)
                 {
-                    getQueuesList.Add(new GetQueuesDetails
+                    // Bypass SSL certificate validation
+                    _httpClient.DefaultRequestHeaders.Add("IgnoreSslErrors", "true");
+                }
+                _httpClient.DefaultRequestHeaders.Add("count", "100");
+                HttpResponseMessage response;
+                try
+                {
+                    response = await _httpClient.SendAsync(request);
+                }
+                catch (HttpRequestException e)
+                {
+                    _logger.LogError($"Request error: {e.Message}");
+                    throw;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                {
+                    foreach (var element in doc.RootElement.GetProperty("data").EnumerateArray())
                     {
-                        queueName = element.GetProperty("queueName").GetString(),
-                        queueOwner = element.GetProperty("owner").GetString()
-                    });
+                        getQueuesList.Add(new GetQueuesDetails
+                        {
+                            queueName = element.GetProperty("queueName").GetString(),
+                            queueOwner = element.GetProperty("owner").GetString()
+                        });
+                    }
+
+                    if (doc.RootElement.TryGetProperty("meta", out JsonElement metaElement) &&
+                        metaElement.TryGetProperty("paging", out JsonElement pagingElement) &&
+                        pagingElement.TryGetProperty("nextPageUri", out JsonElement nextPageUriElement))
+                    {
+                        requestUrl = nextPageUriElement.GetString();
+                    }
+                    else
+                    {
+                        requestUrl = null;
+                    }
                 }
             }
 
             return getQueuesList;
         }
+
 
 
         public class ListenerPorts

@@ -1,21 +1,21 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: #121212; /* Dark background */
-    color: #e0e0e0; /* Light text color */
+    background-color: #121212;
+    color: #e0e0e0;
 }
 
 a, .btn-link {
-    color: #00C895; /* Akzentfarbe */
+    color: #00C895;
 }
 
 .btn-primary {
-    color: #121212; /* Dark background */
-    background-color: #00C895; /* Akzentfarbe */
-    border-color: #00C895; /* Akzentfarbe */
+    color: #121212;
+    background-color: #00C895;
+    border-color: #00C895;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-    box-shadow: 0 0 0 0.1rem #121212, 0 0 0 0.25rem #00C895; /* Dark background and Akzentfarbe */
+    box-shadow: 0 0 0 0.1rem #121212, 0 0 0 0.25rem #00C895;
 }
 
 .content {
@@ -40,7 +40,7 @@ h1:focus {
 
 .blazor-error-boundary::after {
     content: "An error has occurred.";
-    color: #e50000; /* Error message color */
+    color: #e50000;
 }
 
 .darker-border-checkbox.form-check-input {
@@ -48,43 +48,43 @@ h1:focus {
 }
 
 .navbar {
-    background-color: #1c1c1c; /* Darker navbar background */
+    background-color: #1c1c1c;
 }
 
 .nav-link {
-    color: #e0e0e0; /* Light text color for nav links */
+    color: #e0e0e0;
 }
 
     .nav-link:hover {
-        color: #00C895; /* Akzentfarbe on hover */
+        color: #00C895;
     }
 
 .navbar-brand {
-    color: #00C895; /* Akzentfarbe for brand */
+    color: #00C895;
 }
 
 .page {
-    background-color: #121212; /* Dark background */
+    background-color: #121212;
 }
 
 .top-row {
-    border-bottom: 1px solid #333; /* Light border */
+    border-bottom: 1px solid #333;
     background-color: #1c1c1c;
 }
 
 .nav-scrollable {
-    background-color: #1c1c1c; /* Darker nav background */
-    color: #e0e0e0; /* Light text color */
+    background-color: #1c1c1c;
+    color: #e0e0e0;
 }
 
 .main {
-    background-color: #121212; /* Dark background */
-    color: #e0e0e0; /* Light text color */
+    background-color: #121212;
+    color: #e0e0e0;
 }
 
 .article {
-    background-color: #1c1c1c; /* Darker background for articles */
-    color: #e0e0e0; /* Light text color */
+    background-color: #1c1c1c;
+    color: #e0e0e0;
 }
 
 .form-container {
@@ -130,8 +130,8 @@ h1:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Halbtransparentes Schwarz */
-    z-index: 9999; /* Stellen Sie sicher, dass das Overlay über allen anderen Elementen liegt */
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
 }
 
 .loading-message-delete {
@@ -167,18 +167,17 @@ h1:focus {
     }
 
 .table {
-    background-color: #1c1c1c; /* Dunkler Hintergrund */
-    color: #e0e0e0; /* Hellere Textfarbe */
-}
+    background-color: #1c1c1c;
+    color: #e0e0e0;
 
     .table th,
     .table td {
-        border-color: #333; /* Farbe der Tabellenlinien */
+        border-color: #333;
     }
 
     .table th {
-        background-color: #333; /* Farbe für Tabellenkopf */
-        color: #e0e0e0; /* Textfarbe für Tabellenkopf */
+        background-color: #333;
+        color: #e0e0e0;
     }
 
 
