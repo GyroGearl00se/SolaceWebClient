@@ -1,4 +1,5 @@
 ﻿@page "/semp"
+@using Microsoft.AspNetCore.Components.QuickGrid
 @using SolaceWebClient.Services
 @inject SEMPService SEMPService
 @inject IToastService toastService
@@ -37,71 +38,78 @@
     </div>
 </div>
 
-
+<div class="page-size-chooser">
+    Queues per page:
+    <select @bind="@pagination.ItemsPerPage">
+        <option>5</option>
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+    </select>
+</div>
 
 <div>
     <h4>Queues</h4>
-
-    <input type="text" @bind="QueueNameFilterText" placeholder="Filter Queue Name..." @oninput="ApplyFilter" />
-    <input type="text" @bind="QueueOwnerFilterText" placeholder="Filter Queue Owner..." @oninput="ApplyFilter" />
-
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Queue Name</th>
-                <th>Owner</th>
-                <th>Browse</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var queue in PagedQueues)
-            {
-                <tr>
-                    <td>@queue.queueName</td>
-                    <td>@queue.queueOwner</td>
-                    <td><button class="btn btn-secondary" @onclick="() => BrowseQueue(queue.queueName,queue.queueOwner)">Browse Queue</button></td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <button @onclick="PreviousPage" disabled="@(!HasPreviousPage)">Previous</button>
-    <button @onclick="NextPage" disabled="@(!HasNextPage)">Next</button>
-
+    <QuickGrid Items="@FilteredQueues" Pagination="@pagination" Theme="quickgrid-dark">
+        <PropertyColumn Title="Queue Name" Property="@(q => q.queueName)" Sortable="true" Class="quick-grid">
+            <ColumnOptions>
+                <div class="search-box">
+                    <input type="search" autofocus @bind="queueNameFilter" @bind:event="oninput" placeholder="Queue Name..." />
+                </div>
+            </ColumnOptions>
+        </PropertyColumn>
+        <PropertyColumn Title="Owner" Property="@(q => q.queueOwner)" Sortable="true">
+            <ColumnOptions>
+                <div class="search-box">
+                    <input type="search" autofocus @bind="queueOwnerFilter" @bind:event="oninput" placeholder="Owner..." />
+                </div>
+            </ColumnOptions>
+        </PropertyColumn>
+        <TemplateColumn Title="Browse">
+            <button class="btn btn-secondary" @onclick="() => BrowseQueue(context.queueName, context.queueOwner)">Browse Queue</button>
+        </TemplateColumn>
+    </QuickGrid>
 </div>
-
+<div class="paginator">
+<Paginator State="@pagination" />
+</div>
 @code {
-    private string sempUrl;
-    private string sempMessageVpn;
-    private string sempUsername;
-    private string sempPassword;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    private string sempUrl = "";
+    private string sempMessageVpn = "";
+    private string sempUsername = "";
+    private string sempPassword = "";
     private bool sempSslVerify = true;
+    private List<SEMPService.GetQueuesDetails> getQueuesList = new List<SEMPService.GetQueuesDetails>();
+
+    private string queueNameFilter;
+    private string queueOwnerFilter;
 
     private string hostname;
     private int smfPort;
     private int smfsPort;
     private bool smfsEnabled;
 
-    private List<SEMPService.GetQueuesDetails> Queues = new List<SEMPService.GetQueuesDetails>();
-    private List<SEMPService.GetQueuesDetails> FilteredQueues =>
-        string.IsNullOrEmpty(QueueNameFilterText) && string.IsNullOrEmpty(QueueOwnerFilterText) ?
-        Queues :
-        Queues.Where(q =>
-            (string.IsNullOrEmpty(QueueNameFilterText) || q.queueName.Contains(QueueNameFilterText, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrEmpty(QueueOwnerFilterText) || q.queueOwner.Contains(QueueOwnerFilterText, StringComparison.OrdinalIgnoreCase))
-        ).ToList();
-    private List<SEMPService.GetQueuesDetails> PagedQueues => FilteredQueues.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    private IQueryable<SEMPService.GetQueuesDetails> FilteredQueues
+    {
+        get
+        {
+            var result = getQueuesList.AsQueryable();
 
-    private string QueueNameFilterText { get; set; }
-    private string QueueOwnerFilterText { get; set; }
-    
-    private int CurrentPage { get; set; } = 1;
-    private int PageSize { get; set; } = 10;
-    private bool HasPreviousPage => CurrentPage > 1;
-    private bool HasNextPage => CurrentPage * PageSize < FilteredQueues.Count;
+            if (!string.IsNullOrEmpty(queueNameFilter))
+            {
+                result = result.Where(q => q.queueName.Contains(queueNameFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
 
+            if (!string.IsNullOrEmpty(queueOwnerFilter))
+            {
+                result = result.Where(q => q.queueOwner.Contains(queueOwnerFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
 
+            return result;
+        }
+    }
 
     private async Task GetQueues()
     {
@@ -112,7 +120,7 @@
             smfPort = config.SmfPort;
             smfsPort = config.SmfsPort;
 
-            Queues = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
+            getQueuesList = await SEMPService.GetQueuesAsync(sempUrl, sempMessageVpn, sempUsername, sempPassword, sempSslVerify);
             toastService.ShowSuccess("Queues retrieved successfully");
         }
         catch (Exception ex)
@@ -121,38 +129,11 @@
         }
     }
 
-    private void ApplyFilter(ChangeEventArgs e)
-    {
-        CurrentPage = 1;
-        StateHasChanged();
-    }
-
-    private void PreviousPage()
-    {
-        if (HasPreviousPage)
-        {
-            CurrentPage--;
-        }
-    }
-
-    private void NextPage()
-    {
-        if (HasNextPage)
-        {
-            CurrentPage++;
-        }
-    }
-
     private void BrowseQueue(string queueName, string queueOwner)
     {
         string hostname = new Uri(sempUrl).Host;
-        if (smfsEnabled)
-        {
-            hostname = hostname + ":" + smfsPort;
-        } else
-        {
-            hostname = hostname + ":" + smfPort;
-        }
+        hostname = smfsEnabled ? $"{hostname}:{smfsPort}" : $"{hostname}:{smfPort}";
+
         var uri = $"queue-browser?&vpn={sempMessageVpn}&hostname={hostname}&queue={queueName}&username={queueOwner}";
         Navigation.NavigateTo(uri);
     }
