@@ -5,6 +5,7 @@
 @inject QueueBrowserService QueueBrowserService
 @inject ILogger<QueueBrowser> Logger
 @inject Blazored.Toast.Services.IToastService toastService
+@inject NavigationManager Navigation
 
 <Layout>
     <Title>Queue Browser</Title>
@@ -200,5 +201,38 @@
             isDeleting = false;
             deletingMessageId = "";
         }
+    }
+
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (queryParams.TryGetValue("host", out var hostValue))
+        {
+            host = hostValue;
+        }
+
+        if (queryParams.TryGetValue("vpn", out var vpnValue))
+        {
+            vpnName = vpnValue;
+        }
+
+        if (queryParams.TryGetValue("queue", out var queueValue))
+        {
+            queueName = queueValue;
+        }
+
+        if (queryParams.TryGetValue("username", out var usernameValue))
+        {
+            username = usernameValue;
+        }
+
+        if (queryParams.TryGetValue("hostname", out var hostnameValue))
+        {
+            host = hostnameValue;
+        }
+
+        password = string.Empty;
     }
 }
