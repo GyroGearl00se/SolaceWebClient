@@ -1,80 +1,73 @@
 ﻿@page "/semp"
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using SolaceWebClient.Services
+@using Blazorise
+@using Blazorise.DataGrid
 @inject SEMPService SEMPService
-@inject IToastService toastService
+@inject Blazored.Toast.Services.IToastService toastService
 @inject NavigationManager Navigation
 
-<h3>SEMP API</h3>
+<Layout>
+    <Title>SEMP API</Title>
 
-<div class="form-container">
-    <div class="form-section">
-        <h4>SEMP Configuration</h4>
-        <div class="form-group">
-            <div class="input-with-checkbox">
-                <div class="input-container">
-                    <label>URL</label>
-                    <input @bind="sempUrl" name="sempUrl" autocomplete="on" placeholder="URL" />
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" @bind="sempSslVerify" id="sempSslVerify" />
-                    <label for="sempSslVerify">SSL Verify</label>
+    <div class="form-container">
+        <div class="form-section">
+            <h4>SEMP Configuration</h4>
+            <div class="form-group">
+                <div class="input-with-checkbox">
+                    <div class="input-container">
+                        <label>URL</label>
+                        <input @bind="sempUrl" name="sempUrl" autocomplete="on" placeholder="URL" />
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" @bind="sempSslVerify" id="sempSslVerify" />
+                        <label for="sempSslVerify">SSL Verify</label>
+                    </div>
                 </div>
             </div>
+            <div class="form-group">
+                <label>Message VPN</label>
+                <input @bind="sempMessageVpn" name="sempMessageVpn" autocomplete="on" placeholder="Message VPN" />
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input @bind="sempUsername" name="sempUsername" autocomplete="on" placeholder="Username" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input @bind="sempPassword" name="sempPassword" type="password" autocomplete="on" placeholder="Password" />
+            </div>
+            <button class="btn btn-primary" @onclick="GetQueues">Get Queues</button>
         </div>
-        <div class="form-group">
-            <label>Message VPN</label>
-            <input @bind="sempMessageVpn" name="sempMessageVpn" autocomplete="on" placeholder="Message VPN" />
-        </div>
-        <div class="form-group">
-            <label>Username</label>
-            <input @bind="sempUsername" name="sempUsername" autocomplete="on" placeholder="Username" />
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input @bind="sempPassword" name="sempPassword" type="password" autocomplete="on" placeholder="Password" />
-        </div>
-        <button class="btn btn-primary" @onclick="GetQueues">Get Queues</button>
     </div>
-</div>
 
-<div class="page-size-chooser">
-    Queues per page:
-    <select @bind="@pagination.ItemsPerPage">
-        <option>5</option>
-        <option>10</option>
-        <option>20</option>
-        <option>50</option>
-    </select>
-</div>
+    <div>
+        <h4>Queues</h4>
+        <DataGrid TItem="SEMPService.GetQueuesDetails"
+                  Data="@getQueuesList"
+                  RowOverlayBackground="Background.Transparent"
+                  Filterable
+                  FilterMethod="DataGridFilterMethod.Contains"
+                  ShowPager
+                  ShowPageSizes
+                  PagerPosition="DataGridPagerPosition.TopAndBottom"
+                  PagerOptions="new(){ ButtonSize=Size.Small}">
+            <DataGridColumns>
+                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="queueName" Caption="Queue Name" />
+                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="queueOwner" Caption="Queue Owner" />
+            </DataGridColumns>
+            <RowOverlayTemplate>
+                <Div>
+                    <Button Color="Color.Primary" Size="Size.ExtraSmall" @onclick="() => BrowseQueue(context.Item.queueName, context.Item.queueOwner)">
+                        <Icon Name="IconName.Search" /> Browse
+                    </Button>
+                </Div>
+            </RowOverlayTemplate>
+        </DataGrid>
+    </div>
 
-<div>
-    <h4>Queues</h4>
-    <QuickGrid Items="@FilteredQueues" Pagination="@pagination" Theme="quickgrid-dark">
-        <PropertyColumn Title="Queue Name" Property="@(q => q.queueName)" Sortable="true" Class="quick-grid">
-            <ColumnOptions>
-                <div class="search-box">
-                    <input type="search" autofocus @bind="queueNameFilter" @bind:event="oninput" placeholder="Queue Name..." />
-                </div>
-            </ColumnOptions>
-        </PropertyColumn>
-        <PropertyColumn Title="Owner" Property="@(q => q.queueOwner)" Sortable="true">
-            <ColumnOptions>
-                <div class="search-box">
-                    <input type="search" autofocus @bind="queueOwnerFilter" @bind:event="oninput" placeholder="Owner..." />
-                </div>
-            </ColumnOptions>
-        </PropertyColumn>
-        <TemplateColumn Title="Browse">
-            <button class="btn btn-secondary" @onclick="() => BrowseQueue(context.queueName, context.queueOwner)">Browse Queue</button>
-        </TemplateColumn>
-    </QuickGrid>
-</div>
-<div class="paginator">
-<Paginator State="@pagination" />
-</div>
+</Layout>
+
 @code {
-    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
 
     private string sempUrl = "";
     private string sempMessageVpn = "";
@@ -83,33 +76,10 @@
     private bool sempSslVerify = true;
     private List<SEMPService.GetQueuesDetails> getQueuesList = new List<SEMPService.GetQueuesDetails>();
 
-    private string queueNameFilter;
-    private string queueOwnerFilter;
-
     private string hostname;
     private int smfPort;
     private int smfsPort;
     private bool smfsEnabled;
-
-    private IQueryable<SEMPService.GetQueuesDetails> FilteredQueues
-    {
-        get
-        {
-            var result = getQueuesList.AsQueryable();
-
-            if (!string.IsNullOrEmpty(queueNameFilter))
-            {
-                result = result.Where(q => q.queueName.Contains(queueNameFilter, StringComparison.CurrentCultureIgnoreCase));
-            }
-
-            if (!string.IsNullOrEmpty(queueOwnerFilter))
-            {
-                result = result.Where(q => q.queueOwner.Contains(queueOwnerFilter, StringComparison.CurrentCultureIgnoreCase));
-            }
-
-            return result;
-        }
-    }
 
     private async Task GetQueues()
     {

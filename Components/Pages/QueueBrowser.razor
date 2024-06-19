@@ -1,142 +1,134 @@
 ﻿@page "/queue-browser"
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.WebUtilities
-@inject NavigationManager Navigation
 @using SolaceWebClient.Services
+@using Blazorise
+@using Blazorise.DataGrid
 @inject QueueBrowserService QueueBrowserService
 @inject ILogger<QueueBrowser> Logger
-@inject IToastService toastService
+@inject Blazored.Toast.Services.IToastService toastService
 
-<h3>Queue Browser</h3>
+<Layout>
+    <Title>Queue Browser</Title>
 
-<div class="overlay" style="display: @(isDeleting ? "block" : "none")">
-    <div class="loading-message-delete">
-        <p>Deleting Message</p>
-        <p>@deletingMessageId</p>
-    </div>
-</div>
-<div class="overlay" style="display: @(isBrowsing ? "block" : "none")">
-    <div class="loading-message-browsing">
-        <p>Browsing Queue ...</p>
-    </div>
-</div>
-<div class="form-group">
-    <div class="input-with-checkbox">
-        <div class="input-container">
-            <label>Hostname:Port</label>
-            <input @bind="host" name="host" autocomplete="on" placeholder="Host" />
-        </div>
-        <div class="checkbox-container">
-            <input type="checkbox" @bind="useTcps" id="useTcps" />
-            <label for="useTcps">TCPS</label>
-        </div>
-        <div class="checkbox-container">
-            <input type="checkbox" @bind="sslVerify" id="sslVerify" />
-            <label for="sslVerify">SSL Verify</label>
+    <div class="overlay" style="display: @(isDeleting ? "block" : "none")">
+        <div class="loading-message-delete">
+            <p>Deleting Message</p>
+            <p>@deletingMessageId</p>
         </div>
     </div>
-</div>
-<div class="form-group">
-    <label>VPN Name</label>
-    <input @bind="vpnName" name="vpnName" autocomplete="on" placeholder="VPN Name" />
-</div>
-<div class="form-group">
-    <label>Username</label>
-    <input @bind="username" name="username" autocomplete="on" placeholder="Username" />
-</div>
-<div class="form-group">
-    <label>Password</label>
-    <input @bind="password" type="password" autocomplete="on" placeholder="Password" />
-</div>
-<div class="form-group">
-    <label>Queue Name</label>
-    <input @bind="queueName" name="queueName" autocomplete="on" placeholder="Queue Name" />
-</div>
-<div class="form-group">
-    <label>Max Messages</label>
-    <input @bind="maxMessages" type="number" name="maxMessages" min="1" />
-</div>
-<button class="btn btn-primary" @onclick="BrowseQueueAsync">Browse Queue</button>
+    <div class="overlay" style="display: @(isBrowsing ? "block" : "none")">
+        <div class="loading-message-browsing">
+            <p>Browsing Queue ...</p>
+        </div>
+    </div>
 
-<div>
+    <div class="form-group">
+        <div class="input-with-checkbox">
+            <div class="input-container">
+                <label>Hostname:Port</label>
+                <input @bind="host" name="host" autocomplete="on" placeholder="Host" />
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" @bind="useTcps" id="useTcps" />
+                <label for="useTcps">TCPS</label>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" @bind="sslVerify" id="sslVerify" />
+                <label for="sslVerify">SSL Verify</label>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>VPN Name</label>
+        <input @bind="vpnName" name="vpnName" autocomplete="on" placeholder="VPN Name" />
+    </div>
+    <div class="form-group">
+        <label>Username</label>
+        <input @bind="username" name="username" autocomplete="on" placeholder="Username" />
+    </div>
+    <div class="form-group">
+        <label>Password</label>
+        <input @bind="password" type="password" autocomplete="on" placeholder="Password" />
+    </div>
+    <div class="form-group">
+        <label>Queue Name</label>
+        <input @bind="queueName" name="queueName" autocomplete="on" placeholder="Queue Name" />
+    </div>
+    <div class="form-group">
+        <label>Max Messages</label>
+        <input @bind="maxMessages" type="number" name="maxMessages" min="1" />
+    </div>
+    <button class="btn btn-primary" @onclick="BrowseQueueAsync">Browse Queue</button>
+
     <h4>Messages</h4>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Toggle</th>
-                <th>Message ID</th>
-                <th>Sender Timestamp</th>
-                <th>Destination</th>
-                <th>Application Message ID</th>
-                <th>Sender ID</th>
-                <th>Message Type</th>
-                <th>Correlation ID</th>
-                <th>Delivery Mode</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var message in messages)
-            {
-                <tr>
-                    <td>
-                        <span class="toggle-icon @(expandedMessageIds.Contains(message.ADMessageId) ? "rotated" : "")" data-id="@message.ADMessageId" @onclick="() => ToggleContent(message.ADMessageId)">→</span>
-                    </td>
-                    <td>@message.ADMessageId</td>
-                    <td>@message.FormattedDateTime</td>
-                    <td>@message.DestinationName</td>
-                    <td>@message.ApplicationMessageId</td>
-                    <td>@message.SenderId</td>
-                    <td>@message.ApplicationMessageType</td>
-                    <td>@message.CorrelationId</td>
-                    <td>@message.DeliveryMode</td>
-                    <td>
-                        <button class="delete-button" @onclick="() => DeleteMessage(message.ADMessageId)">Delete</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="11">
-                        <div id="message-content-@message.ADMessageId" style="display: @(expandedMessageIds.Contains(message.ADMessageId) ? "block" : "none")">
-                            <div class="parent" style="display: flex;">
-                                <div class="content" style="flex: 1; border-right: 2px solid black; overflow: hidden;">
-                                    @if (!string.IsNullOrWhiteSpace(message.MessageContent))
-                                    {
-                                        <br>
-
-                                        @message.MessageContent
-
-                                        <br>
-                                    }
-                                    else if (!string.IsNullOrWhiteSpace(message.MessageContentXML))
-                                    {
-                                        <pre><code>@message.MessageContentXML</code></pre>
-                                    }
-                                    else
-                                    {
-                                        <p>No content available</p>
-                                    }
-                                </div>
-                                <div class="content" style="margin-left: 2px;">
-                                    @if (message.UserProperties != null)
-                                    {
-                                        foreach (var property in message.UserProperties)
-                                        {
-                                            <p>@property.Key: @property.Value</p>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <p>No user properties</p>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+    <DataGrid
+            TItem="MessageDetails"
+            Data="@messages"
+            @ref="dataGrid"
+            RowOverlayBackground="Background.Transparent"
+            DetailRowStartsVisible="false"
+            Filterable
+            FilterMethod="DataGridFilterMethod.Contains"
+            ShowPager
+            ShowPageSizes
+            PagerPosition="DataGridPagerPosition.TopAndBottom"
+            PagerOptions="new(){ ButtonSize=Size.Small}"
+            >
+        <TotalItemsTemplate><Badge Color="Color.Success">@context.TotalItems total items</Badge></TotalItemsTemplate>
+        <TotalItemsShortTemplate><Badge Color="Color.Success">@context.TotalItems</Badge></TotalItemsShortTemplate>
+        <DataGridColumns>
+            <DataGridColumn TItem="MessageDetails" Field="ADMessageId" Caption="Message ID" />
+            <DataGridColumn TItem="MessageDetails" Field="FormattedDateTime" Caption="Sender Timestamp" />
+            <DataGridColumn TItem="MessageDetails" Field="DestinationName" Caption="Destination" />
+            <DataGridColumn TItem="MessageDetails" Field="ApplicationMessageId" Caption="Application Message ID" />
+            <DataGridColumn TItem="MessageDetails" Field="SenderId" Caption="Sender ID" />
+            <DataGridColumn TItem="MessageDetails" Field="ApplicationMessageType" Caption="Message Type" />
+            <DataGridColumn TItem="MessageDetails" Field="CorrelationId" Caption="Correlation ID" />
+            <DataGridColumn TItem="MessageDetails" Field="DeliveryMode" Caption="Delivery Mode" />
+        </DataGridColumns>
+        <RowOverlayTemplate>
+            <Div>
+                <Button Color="Color.Danger" Size="Size.ExtraSmall" @onclick="() => DeleteMessage(context.Item.ADMessageId)">
+                    <Icon Name="IconName.Delete" /> Delete
+                </Button>
+            </Div>
+        </RowOverlayTemplate>
+        <DetailRowTemplate Context="message">
+            <div class="message-content">
+                <div class="parent" style="display: flex;">
+                    <div class="content" style="flex: 1; border-right: 2px solid black; overflow: hidden;">
+                        @if (!string.IsNullOrWhiteSpace(message.MessageContent))
+                        {
+                            <br>
+                            @message.MessageContent
+                            <br>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(message.MessageContentXML))
+                        {
+                            <pre><code>@message.MessageContentXML</code></pre>
+                        }
+                        else
+                        {
+                            <p>No content available</p>
+                        }
+                    </div>
+                    <div class="content" style="margin-left: 2px;">
+                        @if (message.UserProperties != null)
+                        {
+                            foreach (var property in message.UserProperties)
+                            {
+                                <p>@property.Key: @property.Value</p>
+                            }
+                        }
+                        else
+                        {
+                            <p>No user properties</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </DetailRowTemplate>
+    </DataGrid>
+</Layout>
 
 @code {
     private string host;
@@ -148,6 +140,7 @@
     private bool sslVerify = true;
     private bool useTcps = true;
     private List<MessageDetails> messages = new List<MessageDetails>();
+    private DataGrid<MessageDetails> dataGrid;
 
     private bool isBrowsing = false;
 
@@ -207,52 +200,5 @@
             isDeleting = false;
             deletingMessageId = "";
         }
-    }
-
-    private HashSet<long> expandedMessageIds = new HashSet<long>();
-
-    private void ToggleContent(long adMessageId)
-    {
-        if (expandedMessageIds.Contains(adMessageId))
-        {
-            expandedMessageIds.Remove(adMessageId);
-        }
-        else
-        {
-            expandedMessageIds.Add(adMessageId);
-        }
-    }
-
-    protected override void OnInitialized()
-    {
-        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        var queryParams = QueryHelpers.ParseQuery(uri.Query);
-
-        if (queryParams.TryGetValue("host", out var hostValue))
-        {
-            host = hostValue;
-        }
-
-        if (queryParams.TryGetValue("vpn", out var vpnValue))
-        {
-            vpnName = vpnValue;
-        }
-
-        if (queryParams.TryGetValue("queue", out var queueValue))
-        {
-            queueName = queueValue;
-        }
-
-        if (queryParams.TryGetValue("username", out var usernameValue))
-        {
-            username = usernameValue;
-        }
-
-        if (queryParams.TryGetValue("hostname", out var hostnameValue))
-        {
-            host = hostnameValue;
-        }
-
-        password = string.Empty;
     }
 }

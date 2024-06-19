@@ -1,6 +1,9 @@
 using SolaceWebClient.Components;
 using SolaceWebClient.Services;
 using Blazored.Toast;
+using Blazorise;
+using Blazorise.Bootstrap5;
+using Blazorise.Icons.FontAwesome;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,14 @@ builder.Services.AddSingleton<QueueBrowserService>();
 builder.Services.AddBlazoredToast();
 builder.Services.AddHttpClient<SEMPService>();
 builder.Services.AddScoped<SEMPService>();
+
+builder.Services
+    .AddBlazorise(options =>
+    {
+        options.Immediate = true;
+    })
+    .AddBootstrap5Providers()
+    .AddFontAwesomeIcons();
 
 var app = builder.Build();
 
@@ -36,3 +47,4 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+

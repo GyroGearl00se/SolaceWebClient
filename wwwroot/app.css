@@ -198,35 +198,3 @@ h1:focus {
     margin-left: 10px;
     white-space: nowrap;
 }
-
-
-.quickgrid[theme=quickgrid-dark] {
-    color: white;
-}
-
-    .quickgrid[theme=quickgrid-dark] .col-title {
-        gap: 0.5rem;
-        font-weight: bold;
-        color: #00c895;
-        margin-right: 3rem;
-    }
-
-    .quickgrid[theme=quickgrid-dark] .col-options-button {
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"> <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>');
-    }
-
-    .quickgrid[theme=quickgrid-dark] .sort-indicator {
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M 2 3.25 L 12 20.75 L 22 3.25 L 12 10 z" /></svg>');
-    }
-
-.paginator {
-    color: #00c895;
-}
-
-    .paginator .go-next, .paginator .go-previous {
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(90)" fill="white" transform-origin="12 12"><path d="M 2 3.25 L 12 20.75 L 22 3.25 L 12 11 z" /></g></svg>');
-    }
-
-    .paginator .go-first, .paginator .go-last {
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="rotate(90) scale(0.8)" fill="white" transform-origin="12 12"><path d="m 2,1.5 l 10,17.5 l 10,-17.5 l -10,7.75 l -10,-7.75 z"/><rect height="2" width="20" y="20.5" x="2"/></g></svg>');
-    }
