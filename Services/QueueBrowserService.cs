@@ -95,8 +95,17 @@ namespace SolaceWebClient.Services
                         while ((message = await Task.Run(() => browser.GetNext())) != null && messageCount < maxMessages)
                         {
                             //_logger.LogInformation("Message received: {message}", Encoding.UTF8.GetString(message.BinaryAttachment));
-                            DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(message.SenderTimestamp);
-                            string formattedDateTime = dateTimeOffset.ToString("yyyy-MM-dd HH:mm:ss");
+
+                            string formattedDateTime;
+
+                            if (message.SenderTimestamp == -1)
+                            {
+                                formattedDateTime = "N/A";
+                            } else
+                            {
+                                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(message.SenderTimestamp);
+                                formattedDateTime = dateTimeOffset.ToString("yyyy-MM-dd HH:mm:ss");
+                            }
 
                             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
 
@@ -116,13 +125,32 @@ namespace SolaceWebClient.Services
                                     keyValuePairs.Add(key, value);
                                 }
                             }
+
+                            string messageContent;
+                            if (SDTUtils.GetText(message) != null)
+                            {
+                                messageContent = SDTUtils.GetText(message);
+                            }
+                            else
+                            {
+                                byte[] binaryAttachment = message.BinaryAttachment;
+                                if (binaryAttachment != null && binaryAttachment.Length > 0)
+                                {
+                                    messageContent = Encoding.UTF8.GetString(binaryAttachment);
+                                }
+                                else
+                                {
+                                    messageContent = "";
+                                }
+                            }
+
                             messages.Add(new MessageDetails
                             {
                                 DestinationName = message.Destination.Name != null ? message.Destination.Name : "N/A",
                                 ApplicationMessageType = message.ApplicationMessageType != null ? message.ApplicationMessageType : "N/A",
                                 ApplicationMessageId = message.ApplicationMessageId != null ? message.ApplicationMessageId : "N/A",
                                 SenderId = message.SenderId != null ? message.SenderId : "N/A",
-                                MessageContent = message.BinaryAttachment != null ? System.Text.Encoding.ASCII.GetString(message.BinaryAttachment) : "",
+                                MessageContent = messageContent,
                                 MessageContentXML = message.XmlContent != null ? System.Text.Encoding.ASCII.GetString(message.XmlContent) : "",
                                 CorrelationId = message.CorrelationId != null ? message.CorrelationId : "N/A",
                                 ADMessageId = message.ADMessageId != 0 ? message.ADMessageId : 0,
