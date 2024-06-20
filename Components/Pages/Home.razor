@@ -15,7 +15,7 @@
             <div class="input-with-checkbox">
                 <div class="input-container">
                     <label>Hostname:Port</label>
-                    <input @bind="publishHost" name="publishHost" autocomplete="on" placeholder="hostname:port" />
+                    <input @bind="publishHost" name="publishHost" autocomplete="on" placeholder="tcps://broker.domain:55443" />
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" @bind="publishUseTcps" id="publishUseTcps" />
@@ -29,7 +29,7 @@
         </div>
         <div class="form-group">
             <label>VPN Name</label>
-            <input @bind="publishVpnName" name="publishVpnName" autocomplete="on" placeholder="VPN Name" />
+            <input @bind="publishVpnName" name="publishVpnName" autocomplete="on" placeholder="default" />
         </div>
         <div class="form-group">
             <label>Username</label>
@@ -41,7 +41,7 @@
         </div>
         <div class="form-group">
             <label>Topic</label>
-            <input @bind="publishTopic" name="publishTopic" autocomplete="on" placeholder="Topic" />
+            <input @bind="publishTopic" name="publishTopic" autocomplete="on" placeholder="topic" />
         </div>
         <div class="form-group">
             <label>Message</label>
@@ -56,7 +56,7 @@
             <div class="input-with-checkbox">
                 <div class="input-container">
                     <label>Hostname:Port</label>
-                    <input @bind="subscribeHost" name="subscribeHost" autocomplete="on" placeholder="hostname:port" />
+                    <input @bind="subscribeHost" name="subscribeHost" autocomplete="on" placeholder="tcps://broker.domain:55443" />
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" @bind="subscribeUseTcps" id="subscribeUseTcps" />
@@ -70,7 +70,7 @@
         </div>
         <div class="form-group">
             <label>VPN Name</label>
-            <input @bind="subscribeVpnName" name="subscribeVpnName" autocomplete="on" placeholder="VPN Name" />
+            <input @bind="subscribeVpnName" name="subscribeVpnName" autocomplete="on" placeholder="default" />
         </div>
         <div class="form-group">
             <label>Username</label>
@@ -82,7 +82,7 @@
         </div>
         <div class="form-group">
             <label>Topic</label>
-            <input @bind="subscribeTopic" name="subscribeTopic" autocomplete="on" placeholder="Topic" />
+            <input @bind="subscribeTopic" name="subscribeTopic" autocomplete="on" placeholder="topic" />
         </div>
         <button class="btn btn-primary" @onclick="SubscribeToTopic">Subscribe</button>
     </div>

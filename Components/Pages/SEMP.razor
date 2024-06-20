@@ -16,7 +16,7 @@
                 <div class="input-with-checkbox">
                     <div class="input-container">
                         <label>URL</label>
-                        <input @bind="sempUrl" name="sempUrl" autocomplete="on" placeholder="URL" />
+                        <input @bind="sempUrl" name="sempUrl" autocomplete="on" placeholder="https://broker.domain" />
                     </div>
                     <div class="checkbox-container">
                         <input type="checkbox" @bind="sempSslVerify" id="sempSslVerify" />
@@ -26,7 +26,7 @@
             </div>
             <div class="form-group">
                 <label>Message VPN</label>
-                <input @bind="sempMessageVpn" name="sempMessageVpn" autocomplete="on" placeholder="Message VPN" />
+                <input @bind="sempMessageVpn" name="sempMessageVpn" autocomplete="on" placeholder="default" />
             </div>
             <div class="form-group">
                 <label>Username</label>
@@ -52,12 +52,12 @@
                   PagerPosition="DataGridPagerPosition.TopAndBottom"
                   PagerOptions="new(){ ButtonSize=Size.Small}">
             <DataGridColumns>
-                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="queueName" Caption="Queue Name" />
-                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="queueOwner" Caption="Queue Owner" />
+                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="QueueName" Caption="Queue Name" />
+                <DataGridColumn TItem="SEMPService.GetQueuesDetails" Field="QueueOwner" Caption="Queue Owner" />
             </DataGridColumns>
             <RowOverlayTemplate>
                 <Div>
-                    <Button Color="Color.Primary" Size="Size.ExtraSmall" @onclick="() => BrowseQueue(context.Item.queueName, context.Item.queueOwner)">
+                    <Button Color="Color.Primary" Size="Size.ExtraSmall" @onclick="() => BrowseQueue(context.Item.QueueName, context.Item.QueueOwner)">
                         <Icon Name="IconName.Search" /> Browse
                     </Button>
                 </Div>

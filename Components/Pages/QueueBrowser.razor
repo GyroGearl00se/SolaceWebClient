@@ -26,7 +26,7 @@
         <div class="input-with-checkbox">
             <div class="input-container">
                 <label>Hostname:Port</label>
-                <input @bind="host" name="host" autocomplete="on" placeholder="Host" />
+                <input @bind="host" name="host" autocomplete="on" placeholder="tcps://broker.domain:55443" />
             </div>
             <div class="checkbox-container">
                 <input type="checkbox" @bind="useTcps" id="useTcps" />
@@ -40,7 +40,7 @@
     </div>
     <div class="form-group">
         <label>VPN Name</label>
-        <input @bind="vpnName" name="vpnName" autocomplete="on" placeholder="VPN Name" />
+        <input @bind="vpnName" name="vpnName" autocomplete="on" placeholder="default" />
     </div>
     <div class="form-group">
         <label>Username</label>
