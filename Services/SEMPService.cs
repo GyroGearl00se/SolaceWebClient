@@ -10,18 +10,16 @@ namespace SolaceWebClient.Services
 {
     public class SEMPService
     {
-        private readonly HttpClient _httpClient;
         private readonly ILogger<SEMPService> _logger;
 
         public class GetQueuesDetails
         {
-            public string queueName { get; set; }
-            public string queueOwner { get; set; }
+            public string QueueName { get; set; }
+            public string QueueOwner { get; set; }
         }
 
-        public SEMPService(HttpClient httpClient, ILogger<SEMPService> logger)
+        public SEMPService(ILogger<SEMPService> logger)
         {
-            _httpClient = httpClient;
             _logger = logger;
         }
 
@@ -30,22 +28,90 @@ namespace SolaceWebClient.Services
             var getQueuesList = new List<GetQueuesDetails>();
             string requestUrl = $"{url}/SEMP/v2/config/msgVpns/{messageVpn}/queues?count=100";
 
-            while (!string.IsNullOrEmpty(requestUrl))
+            var handler = new HttpClientHandler();
+            if (!sslVerify)
+            {
+                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+            }
+
+            using (var client = new HttpClient(handler))
+            {
+                while (!string.IsNullOrEmpty(requestUrl))
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                    var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+
+                    HttpResponseMessage response;
+                    try
+                    {
+                        response = await client.SendAsync(request);
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        _logger.LogError($"Request error: {e.Message}");
+                        throw;
+                    }
+
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsStringAsync();
+
+                    using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                    {
+                        foreach (var element in doc.RootElement.GetProperty("data").EnumerateArray())
+                        {
+                            getQueuesList.Add(new GetQueuesDetails
+                            {
+                                QueueName = element.GetProperty("queueName").GetString(),
+                                QueueOwner = element.GetProperty("owner").GetString()
+                            });
+                        }
+
+                        if (doc.RootElement.TryGetProperty("meta", out JsonElement metaElement) &&
+                            metaElement.TryGetProperty("paging", out JsonElement pagingElement) &&
+                            pagingElement.TryGetProperty("nextPageUri", out JsonElement nextPageUriElement))
+                        {
+                            requestUrl = nextPageUriElement.GetString();
+                        }
+                        else
+                        {
+                            requestUrl = null;
+                        }
+                    }
+                }
+            }
+
+            return getQueuesList;
+        }
+
+        public class ListenerPorts
+        {
+            public int SmfPort { get; set; }
+            public int SmfsPort { get; set; }
+            public bool SmfsEnabled { get; set; }
+        }
+
+        public async Task<ListenerPorts> GetListenerAsync(string url, string messageVpn, string username, string password, bool sslVerify)
+        {
+            string requestUrl = $"{url}/SEMP/v2/config";
+
+            var handler = new HttpClientHandler();
+            if (!sslVerify)
+            {
+                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+            }
+
+            using (var client = new HttpClient(handler))
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authToken);
 
-                if (!sslVerify)
-                {
-                    // Bypass SSL certificate validation
-                    _httpClient.DefaultRequestHeaders.Add("IgnoreSslErrors", "true");
-                }
-                _httpClient.DefaultRequestHeaders.Add("count", "100");
                 HttpResponseMessage response;
                 try
                 {
-                    response = await _httpClient.SendAsync(request);
+                    response = await client.SendAsync(request);
                 }
                 catch (HttpRequestException e)
                 {
@@ -56,88 +122,20 @@ namespace SolaceWebClient.Services
                 response.EnsureSuccessStatusCode();
 
                 var responseBody = await response.Content.ReadAsStringAsync();
+                ListenerPorts config = new ListenerPorts();
 
                 using (JsonDocument doc = JsonDocument.Parse(responseBody))
                 {
-                    foreach (var element in doc.RootElement.GetProperty("data").EnumerateArray())
-                    {
-                        getQueuesList.Add(new GetQueuesDetails
-                        {
-                            queueName = element.GetProperty("queueName").GetString(),
-                            queueOwner = element.GetProperty("owner").GetString()
-                        });
-                    }
-
-                    if (doc.RootElement.TryGetProperty("meta", out JsonElement metaElement) &&
-                        metaElement.TryGetProperty("paging", out JsonElement pagingElement) &&
-                        pagingElement.TryGetProperty("nextPageUri", out JsonElement nextPageUriElement))
-                    {
-                        requestUrl = nextPageUriElement.GetString();
-                    }
-                    else
-                    {
-                        requestUrl = null;
-                    }
+                    var msgVpnElement = doc.RootElement.GetProperty("data");
+                    config.SmfPort = msgVpnElement.GetProperty("serviceSmfPlainTextListenPort").GetInt32();
+                    config.SmfsPort = msgVpnElement.GetProperty("serviceSmfTlsListenPort").GetInt32();
+                    config.SmfsEnabled = msgVpnElement.GetProperty("serviceSempTlsEnabled").GetBoolean();
                 }
+                _logger.LogInformation($"SmfsEnabled: {config.SmfsEnabled}");
+                _logger.LogInformation($"SmfPort: {config.SmfPort}");
+                _logger.LogInformation($"SmfsPort: {config.SmfsPort}");
+                return config;
             }
-
-            return getQueuesList;
-        }
-
-
-
-        public class ListenerPorts
-        {
-            public int SmfPort { get; set; }
-            public int SmfsPort { get; set; }
-            public bool SmfsEnabled {  get; set; }
-        }
-
-
-        public async Task<ListenerPorts> GetListenerAsync(string url, string messageVpn, string username, string password, bool sslVerify)
-        {
-            string requestUrl = $"{url}/SEMP/v2/config";
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-            var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authToken);
-
-            HttpResponseMessage response;
-
-            var handler = new HttpClientHandler();
-            if (!sslVerify)
-            {
-                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-            }
-
-            using (var client = new HttpClient(handler))
-            {
-                try
-                {
-                    response = await client.SendAsync(request);
-                }
-                catch (HttpRequestException e)
-                {
-                    _logger.LogError($"Request error: {e.Message}");
-                    throw;
-                }
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            var responseBody = await response.Content.ReadAsStringAsync();
-            ListenerPorts config = new ListenerPorts();
-
-            using (JsonDocument doc = JsonDocument.Parse(responseBody))
-            {
-                var msgVpnElement = doc.RootElement.GetProperty("data");
-                config.SmfPort = msgVpnElement.GetProperty("serviceSmfPlainTextListenPort").GetInt32();
-                config.SmfsPort = msgVpnElement.GetProperty("serviceSmfTlsListenPort").GetInt32();
-                config.SmfsEnabled = msgVpnElement.GetProperty("serviceSempTlsEnabled").GetBoolean(); 
-            }
-            _logger.LogInformation($"SmfsEnabled: {config.SmfsEnabled}");
-            _logger.LogInformation($"SmfPort: {config.SmfPort}");
-            _logger.LogInformation($"SmfsPort: {config.SmfsPort}");
-            return config;
         }
     }
 }
