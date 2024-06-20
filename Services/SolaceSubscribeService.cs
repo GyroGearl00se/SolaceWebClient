@@ -33,11 +33,9 @@ namespace SolaceWebClient.Services
 
                 if (_session != null)
                 {
-                    _logger.LogInformation("Disconnecting previous session.");
                     Disconnect();
                 }
 
-                _logger.LogInformation("Connect task started for subscribing.");
                 SessionProperties sessionProps = new SessionProperties()
                 {
                     Host = host,
@@ -54,7 +52,6 @@ namespace SolaceWebClient.Services
                 {
                     throw new Exception("Failed to connect to Solace broker.");
                 }
-                _logger.LogInformation("SubscribeToTopic task started.");
                 _session.Subscribe(ContextFactory.Instance.CreateTopic(topic), true);
             }
             catch (OperationErrorException ex)
@@ -68,11 +65,9 @@ namespace SolaceWebClient.Services
         {
             try
             {
-                _logger.LogInformation("Received published message.");
                 using (IMessage message = args.Message)
                 {
                     string messageContent = Encoding.ASCII.GetString(message.BinaryAttachment);
-                    _logger.LogInformation("Message content: {0}", messageContent);
                     messageHandler(messageContent);
                 }
             }
@@ -85,7 +80,6 @@ namespace SolaceWebClient.Services
 
         public void Disconnect()
         {
-            _logger.LogInformation("Disconnecting session.");
             if (_session != null)
             {
                 _session.Disconnect();

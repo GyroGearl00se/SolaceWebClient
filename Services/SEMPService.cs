@@ -131,9 +131,6 @@ namespace SolaceWebClient.Services
                     config.SmfsPort = msgVpnElement.GetProperty("serviceSmfTlsListenPort").GetInt32();
                     config.SmfsEnabled = msgVpnElement.GetProperty("serviceSempTlsEnabled").GetBoolean();
                 }
-                _logger.LogInformation($"SmfsEnabled: {config.SmfsEnabled}");
-                _logger.LogInformation($"SmfPort: {config.SmfPort}");
-                _logger.LogInformation($"SmfsPort: {config.SmfsPort}");
                 return config;
             }
         }

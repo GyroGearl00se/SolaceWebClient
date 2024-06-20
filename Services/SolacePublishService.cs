@@ -30,8 +30,6 @@ namespace SolaceWebClient.Services
                 ContextFactory.Instance.Init(cfp);
                 _context = ContextFactory.Instance.CreateContext(new ContextProperties(), null);
 
-                _logger.LogInformation("Connect task started for publishing.");
-                _logger.LogInformation("sslVerify: " + sslVerify);
                 SessionProperties sessionProps = new SessionProperties()
                 {
                     Host = host,
@@ -49,7 +47,6 @@ namespace SolaceWebClient.Services
                     throw new Exception("Failed to connect to Solace broker.");
                 }
 
-                _logger.LogInformation("PublishMessage task started.");
                 using (IMessage msg = ContextFactory.Instance.CreateMessage())
                 {
                     msg.Destination = ContextFactory.Instance.CreateTopic(topic);
@@ -64,18 +61,12 @@ namespace SolaceWebClient.Services
             }
             finally
             {
-                if (_session != null)
-                {
-                    _logger.LogInformation("Disconnecting publish session.");
-                    _session.Disconnect();
-                    _session.Dispose();
-                }
+                Disconnect();
             }
         }
 
         public void Disconnect()
         {
-            _logger.LogInformation("Disconnecting session.");
             if (_session != null)
             {
                 _session.Disconnect();
