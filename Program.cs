@@ -14,6 +14,7 @@ builder.Services.AddSingleton<SolacePublishService>();
 builder.Services.AddSingleton<SolaceSubscribeService>();
 
 builder.Services.AddSingleton<QueueBrowserService>();
+builder.Services.AddSingleton<PresetService>();
 
 builder.Services.AddBlazoredToast();
 builder.Services.AddHttpClient<SEMPService>();

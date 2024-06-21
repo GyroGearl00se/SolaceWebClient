@@ -23,4 +23,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 COPY trustedca ./trustedca
+COPY presets ./presets
 ENTRYPOINT ["dotnet", "SolaceWebClient.dll"]

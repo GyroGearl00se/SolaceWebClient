@@ -10,10 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="presets\.keep" />
     <None Remove="trustedca\.keep" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="presets\.keep" />
     <Compile Include="trustedca\.keep" />
   </ItemGroup>
 
