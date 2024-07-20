@@ -67,8 +67,17 @@ namespace SolaceWebClient.Services
             {
                 using (IMessage message = args.Message)
                 {
-                    string messageContent = Encoding.ASCII.GetString(message.BinaryAttachment);
-                    messageHandler(messageContent);
+                    string messageContent;
+
+                    byte[] binaryAttachment = message.BinaryAttachment;
+                    if (binaryAttachment != null && binaryAttachment.Length > 0)
+                    {
+                        messageContent = Encoding.UTF8.GetString(binaryAttachment);
+                        messageHandler(messageContent);
+                    } else
+                    {
+                        messageHandler("Message without payload");
+                    }
                 }
             }
             catch (OperationErrorException ex)
