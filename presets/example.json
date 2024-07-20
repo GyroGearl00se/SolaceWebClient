@@ -1,24 +1,17 @@
 ﻿[
-    {
-        "Name": "demo",
-        "Host": "localhost:5555",
-        "VpnName": "default",
-        "Username": "demo",
-        "QueueName": "demo",
-    },
-    {
-        "Name": "demo2",
-        "Host": "localhost:5555",
-        "VpnName": "default",
-        "Username": "demo",
-        "Topic": "demo"
-    },
-    {
-        "Name": "demo3",
-        "Host": "localhost:5555",
-        "VpnName": "default",
-        "Username": "demo",
-        "QueueName": "demo",
-        "Topic": "demo"
-    }
+  {
+    "Name": "Example 1",
+    "Host": "broker.domain:5555",
+    "VpnName": "default",
+    "Username": "demo",
+    "QueueName": "demo"
+  },
+  {
+    "Name": "Example 1",
+    "Host": "tcps://broker.domain:55443",
+    "VpnName": "default",
+    "Username": "demo",
+    "Topic": "a/b/c",
+    "QueueName": "myqueue"
+  }
 ]
