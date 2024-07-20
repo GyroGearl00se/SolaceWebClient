@@ -7,8 +7,6 @@
 @inject Blazored.Toast.Services.IToastService toastService
 @inject NavigationManager Navigation
 @inject PresetService PresetService
-@inject IModalService ModalService
-@inject IJSRuntime JsRuntime
 
 <Layout>
     <Title>Queue Browser</Title>
@@ -22,9 +20,6 @@
                 <option value="@preset.Name">@preset.Name</option>
             }
         </select>
-        <button class="btn btn-secondary" @onclick="ShowSavePresetModal">Save Preset</button>
-        <button class="btn btn-secondary" @onclick="DeletePreset">Delete Preset</button>
-
     </div>
 
     <div class="overlay" style="display: @(isDeleting ? "block" : "none")">
@@ -44,10 +39,6 @@
             <div class="input-container">
                 <label>Hostname:Port</label>
                 <input @bind="host" name="host" autocomplete="on" placeholder="tcps://broker.domain:55443" />
-            </div>
-            <div class="checkbox-container">
-                <input type="checkbox" @bind="useTcps" id="useTcps" />
-                <label for="useTcps">TCPS</label>
             </div>
             <div class="checkbox-container">
                 <input type="checkbox" @bind="sslVerify" id="sslVerify" />
@@ -84,7 +75,7 @@
               RowOverlayBackground="Background.Transparent"
               DetailRowStartsVisible="false"
               Filterable
-              FilterMethod="DataGridFilterMethod.Contains"
+              FilterMethod="DataGridFilterMethod.StartsWith"
               ShowPager
               ShowPageSizes
               PagerPosition="DataGridPagerPosition.TopAndBottom"
@@ -144,67 +135,7 @@
             </div>
         </DetailRowTemplate>
     </DataGrid>
-
-    <Modal @ref="savePresetModal">
-        <ModalContent Centered Background="Background.Dark">
-            <ModalHeader>
-                <ModalTitle>Save Preset</ModalTitle>
-                <CloseButton Clicked="HideSavePresetModal" />
-            </ModalHeader>
-            <ModalBody>
-                <Field>
-                    <Validation Validator="ValidationRule.IsNotEmpty">
-                        <FieldLabel>Preset Name</FieldLabel>
-                        <TextEdit @bind-Text="@presetName" Placeholder="Enter preset name...">
-                            <Feedback>
-                                <ValidationNone>Please enter a valid preset name</ValidationNone>
-                                <ValidationError>Please enter a valid preset name</ValidationError>
-                            </Feedback>
-                        </TextEdit>
-                    </Validation>
-                </Field>
-                <Field>
-                    <Validation Validator="ValidationRule.IsNotEmpty">
-                        <FieldLabel>Host</FieldLabel>
-                        <TextEdit @bind-Text="@host" Placeholder="Enter host...">
-                            <Feedback>
-                                <ValidationNone>Please enter a valid host</ValidationNone>
-                                <ValidationError>Please enter a valid host</ValidationError>
-                            </Feedback>
-                        </TextEdit>
-                    </Validation>
-                </Field>
-                <Field>
-                    <Validation Validator="ValidationRule.IsNotEmpty">
-                    <FieldLabel>VPN Name</FieldLabel>
-                    <TextEdit @bind-Text="@vpnName" Placeholder="Enter VPN name...">
-                            <Feedback>
-                                <ValidationNone>Please enter a valid VPN name</ValidationNone>
-                                <ValidationError>Please enter a valid VPN name</ValidationError>
-                            </Feedback>
-                        </TextEdit>
-                    </Validation>
-                </Field>
-                <Field>
-                    <FieldLabel>Username</FieldLabel>
-                    <TextEdit @bind-Text="@username" Placeholder="Enter username..." />
-                </Field>
-                <Field>
-                    <FieldLabel>Queue Name</FieldLabel>
-                    <TextEdit @bind-Text="@queueName" Placeholder="Enter queue name..." />
-                </Field>
-
-            </ModalBody>
-            <ModalFooter>
-                <Button Color="Color.Secondary" Clicked="HideSavePresetModal">Cancel</Button>
-                <Button Color="Color.Primary" Clicked="SavePreset">Save</Button>
-            </ModalFooter>
-        </ModalContent>
-    </Modal>
-
 </Layout>
-
-
 
 @code {
     private string host;
@@ -214,33 +145,21 @@
     private string queueName;
     private int maxMessages = 50;
     private bool sslVerify = true;
-    private bool useTcps = true;
     private List<MessageDetails> messages = new List<MessageDetails>();
     private DataGrid<MessageDetails> dataGrid;
     private string selectedPresetName;
-    private Modal savePresetModal;
     private string presetName;
     private List<PresetModel> presets = new List<PresetModel>();
 
     private bool isBrowsing = false;
-
-    private string FormatHost(string host, bool useTcps)
-    {
-        if (useTcps && !host.StartsWith("tcps://"))
-        {
-            return "tcps://" + host;
-        }
-        return host;
-    }
 
     private async Task BrowseQueueAsync()
     {
         Logger.LogInformation("BrowseQueue method called.");
         try
         {
-            string formattedHost = FormatHost(host, useTcps);
             isBrowsing = true;
-            messages = await QueueBrowserService.BrowseQueueAsync(formattedHost, vpnName, username, password, queueName, sslVerify, maxMessages);
+            messages = await QueueBrowserService.BrowseQueueAsync(host, vpnName, username, password, queueName, sslVerify, maxMessages);
             Logger.LogInformation("Messages retrieved: {count}", messages.Count);
         }
         catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
@@ -263,10 +182,9 @@
     {
         try
         {
-            string formattedHost = FormatHost(host, useTcps);
             isDeleting = true;
             deletingMessageId = adMessageId.ToString();
-            await QueueBrowserService.DeleteMessage(formattedHost, vpnName, username, password, queueName, sslVerify, adMessageId);
+            await QueueBrowserService.DeleteMessage(host, vpnName, username, password, queueName, sslVerify, adMessageId);
             toastService.ShowSuccess("Deleting message with ID: " + deletingMessageId);
             await BrowseQueueAsync();
         }
@@ -340,63 +258,6 @@
             {
                 Console.WriteLine($"Preset with name '{selectedPresetName}' not found.");
             }
-        }
-    }
-    private void ShowSavePresetModal()
-    {
-        presetName = "";
-        savePresetModal.Show();
-    }
-
-    private void HideSavePresetModal()
-    {
-        savePresetModal.Hide();
-    }
-
-    private async Task SavePreset()
-    {
-        var existingPreset = presets.FirstOrDefault(p => p.Name == presetName);
-
-        if (existingPreset != null)
-        {
-            if (await JsRuntime.InvokeAsync<bool>("confirm", $"A preset with the name '{presetName}' already exists. Do you want to overwrite it?"))
-            {
-                existingPreset.Host = host;
-                existingPreset.VpnName = vpnName;
-                existingPreset.Username = username;
-                existingPreset.QueueName = queueName;
-
-                await PresetService.SavePresetAsync(existingPreset);
-                presets = await PresetService.GetPresetsAsync();
-                toastService.ShowSuccess("Preset overwritten successfully");
-            }
-        }
-        else
-        {
-            var newPreset = new PresetModel
-                {
-                    Name = presetName,
-                    Host = host,
-                    VpnName = vpnName,
-                    Username = username,
-                    QueueName = queueName
-                };
-
-            await PresetService.SavePresetAsync(newPreset);
-            presets = await PresetService.GetPresetsAsync();
-            toastService.ShowSuccess("Preset saved successfully");
-        }
-
-        savePresetModal.Hide();
-    }
-
-    private async Task DeletePreset()
-    {
-        if (await JsRuntime.InvokeAsync<bool>("confirm", $"Deleting  '{selectedPresetName}' Are you sure ?"))
-        {
-            await PresetService.DeletePresetAsync(selectedPresetName);
-            presets = await PresetService.GetPresetsAsync();
-            toastService.ShowSuccess("Deleted Preset successfully");
         }
     }
 }

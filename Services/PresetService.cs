@@ -14,53 +14,37 @@ namespace SolaceWebClient.Services
         public string VpnName { get; set; }
         public string Username { get; set; }
         public string QueueName { get; set; }
+        public string Topic { get; set; }
     }
 
     public class PresetService
     {
-        private readonly string presetsPath = "presets";
+        private readonly string presetsFilePath = Path.Combine("presets", "presets.json");
 
         public async Task<List<PresetModel>> GetPresetsAsync()
         {
-            if (!Directory.Exists(presetsPath))
+            if (!File.Exists(presetsFilePath))
             {
-                Directory.CreateDirectory(presetsPath);
+                return new List<PresetModel>();
             }
 
-            var presets = new List<PresetModel>();
+            var json = await File.ReadAllTextAsync(presetsFilePath);
+            var presets = JsonSerializer.Deserialize<List<PresetModel>>(json);
 
-            foreach (var file in Directory.GetFiles(presetsPath, "*.json"))
-            {
-                var json = await File.ReadAllTextAsync(file);
-                var preset = JsonSerializer.Deserialize<PresetModel>(json);
-                presets.Add(preset);
-            }
-
-            return presets;
+            return presets ?? new List<PresetModel>();
         }
 
-        public async Task SavePresetAsync(PresetModel preset)
+        public async Task SavePresetsAsync(List<PresetModel> presets)
         {
-            if (!Directory.Exists(presetsPath))
+            var json = JsonSerializer.Serialize(presets, new JsonSerializerOptions { WriteIndented = true });
+            var directory = Path.GetDirectoryName(presetsFilePath);
+
+            if (!Directory.Exists(directory))
             {
-                Directory.CreateDirectory(presetsPath);
+                Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(preset);
-            var filePath = Path.Combine(presetsPath, $"{preset.Name}.json");
-            await File.WriteAllTextAsync(filePath, json);
-        }
-
-        public async Task DeletePresetAsync(string presetName)
-        {
-            if (!Directory.Exists(presetsPath))
-            {
-                Directory.CreateDirectory(presetsPath);
-            }
-
-            var filePath = Path.Combine(presetsPath, $"{presetName}.json");
-            File.Delete(filePath);
+            await File.WriteAllTextAsync(presetsFilePath, json);
         }
     }
 }
-

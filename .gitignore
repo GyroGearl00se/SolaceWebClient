@@ -362,8 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-presets/*
-!presets/.keep
-
 trustedca/*
 !trustedca/.keep
