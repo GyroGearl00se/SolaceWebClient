@@ -1,5 +1,5 @@
 # SolaceWebClient
-![icon](wwwroot/favicon.png){width=10% height=10%}
+<img src="wwwroot/favicon.png" width="30%">
 ## Overview
 The Solace Web Client is a .NET (C#) application that offers comprehensive functionalities for Queue Browsing, Publishing, and Subscribing using the Solace PubSub+ platform.
 
