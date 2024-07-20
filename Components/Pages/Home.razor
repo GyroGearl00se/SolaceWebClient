@@ -5,6 +5,7 @@
 @inject SolaceSubscribeService SubscribeService
 @inject Blazored.Toast.Services.IToastService toastService
 @implements IDisposable
+@inject PresetService PresetService
 
 <h3>Solace PubSub+</h3>
 
@@ -12,14 +13,20 @@
     <div class="form-section">
         <h4>Publish Message</h4>
         <div class="form-group">
+            <label>Select Preset</label>
+            <select class="form-select-sm" @onchange="LoadPresetPublish">
+                <option value="">Select a preset</option>
+                @foreach (var preset in presets)
+                {
+                    <option value="@preset.Name">@preset.Name</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
             <div class="input-with-checkbox">
                 <div class="input-container">
                     <label>Hostname:Port</label>
                     <input @bind="publishHost" name="publishHost" autocomplete="on" placeholder="tcps://broker.domain:55443" />
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" @bind="publishUseTcps" id="publishUseTcps" />
-                    <label for="publishUseTcps">TCPS</label>
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" @bind="publishSslVerify" id="publishSslVerify" />
@@ -53,14 +60,20 @@
     <div class="form-section">
         <h4>Subscribe to Topic</h4>
         <div class="form-group">
+            <label>Select Preset</label>
+            <select class="form-select-sm" @onchange="LoadPresetSubscribe">
+                <option value="">Select a preset</option>
+                @foreach (var preset in presets)
+                {
+                    <option value="@preset.Name">@preset.Name</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
             <div class="input-with-checkbox">
                 <div class="input-container">
                     <label>Hostname:Port</label>
                     <input @bind="subscribeHost" name="subscribeHost" autocomplete="on" placeholder="tcps://broker.domain:55443" />
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" @bind="subscribeUseTcps" id="subscribeUseTcps" />
-                    <label for="subscribeUseTcps">TCPS</label>
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" @bind="subscribeSslVerify" id="subscribeSslVerify" />
@@ -105,7 +118,6 @@
     private string publishPassword;
     private string publishTopic;
     private string publishMessage;
-    private bool publishUseTcps = true;
     private bool publishSslVerify = true;
     private string subscribeHost;
     private string subscribeVpnName;
@@ -113,25 +125,69 @@
     private string subscribePassword;
     private string subscribeTopic;
     private bool subscribeSslVerify = true;
-    private bool subscribeUseTcps = true;
+    private string selectedPresetName;
+    private string presetName;
+    private List<PresetModel> presets = new List<PresetModel>();
 
     private List<string> messages = new List<string>();
 
-    private string FormatHost(string host, bool useTcps)
+    protected override async Task OnInitializedAsync()
     {
-        if (useTcps && !host.StartsWith("tcps://"))
-        {
-            return "tcps://" + host;
-        }
-        return host;
+        presets = await PresetService.GetPresetsAsync();
     }
+
+    private async Task LoadPresetPublish(ChangeEventArgs e)
+    {
+        selectedPresetName = e.Value?.ToString();
+        Console.WriteLine($"Selected Preset Name: {selectedPresetName}");
+        if (!string.IsNullOrEmpty(selectedPresetName))
+        {
+            var preset = presets.FirstOrDefault(p => p.Name == selectedPresetName);
+            if (preset != null)
+            {
+                publishHost = preset.Host;
+                publishVpnName = preset.VpnName;
+                publishUsername = preset.Username;
+                publishTopic = preset.Topic;
+
+                Console.WriteLine($"Loaded Preset: {preset.Name}");
+            }
+            else
+            {
+                Console.WriteLine($"Preset with name '{selectedPresetName}' not found.");
+            }
+        }
+    }
+
+    private async Task LoadPresetSubscribe(ChangeEventArgs e)
+    {
+        selectedPresetName = e.Value?.ToString();
+        Console.WriteLine($"Selected Preset Name: {selectedPresetName}");
+        if (!string.IsNullOrEmpty(selectedPresetName))
+        {
+            var preset = presets.FirstOrDefault(p => p.Name == selectedPresetName);
+            if (preset != null)
+            {
+                subscribeHost = preset.Host;
+                subscribeVpnName = preset.VpnName;
+                subscribeUsername = preset.Username;
+                subscribeTopic = preset.Topic;
+
+                Console.WriteLine($"Loaded Preset: {preset.Name}");
+            }
+            else
+            {
+                Console.WriteLine($"Preset with name '{selectedPresetName}' not found.");
+            }
+        }
+    }
+
 
     private void ConnectAndPublish()
     {
         try
         {
-            string formattedHost = FormatHost(publishHost, publishUseTcps);
-            PublishService.PublishMessage(formattedHost, publishVpnName, publishUsername, publishPassword, publishTopic, publishMessage, publishSslVerify);
+            PublishService.PublishMessage(publishHost, publishVpnName, publishUsername, publishPassword, publishTopic, publishMessage, publishSslVerify);
             toastService.ShowSuccess("Successfully published message");
         }
         catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
@@ -144,8 +200,7 @@
     {
         try
         {
-            string formattedHost = FormatHost(subscribeHost, subscribeUseTcps);
-            SubscribeService.SubscribeToTopic(formattedHost, subscribeVpnName, subscribeUsername, subscribePassword, subscribeTopic, subscribeSslVerify, message =>
+            SubscribeService.SubscribeToTopic(subscribeHost, subscribeVpnName, subscribeUsername, subscribePassword, subscribeTopic, subscribeSslVerify, message =>
             {
                 InvokeAsync(() =>
                 {

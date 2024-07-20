@@ -6,9 +6,21 @@
 @inject ILogger<QueueBrowser> Logger
 @inject Blazored.Toast.Services.IToastService toastService
 @inject NavigationManager Navigation
+@inject PresetService PresetService
 
 <Layout>
     <Title>Queue Browser</Title>
+
+    <div class="form-group">
+        <label>Select Preset</label>
+        <select class="form-select-sm" @onchange="LoadPreset">
+            <option value="">Select a preset</option>
+            @foreach (var preset in presets)
+            {
+                <option value="@preset.Name">@preset.Name</option>
+            }
+        </select>
+    </div>
 
     <div class="overlay" style="display: @(isDeleting ? "block" : "none")">
         <div class="loading-message-delete">
@@ -27,10 +39,6 @@
             <div class="input-container">
                 <label>Hostname:Port</label>
                 <input @bind="host" name="host" autocomplete="on" placeholder="tcps://broker.domain:55443" />
-            </div>
-            <div class="checkbox-container">
-                <input type="checkbox" @bind="useTcps" id="useTcps" />
-                <label for="useTcps">TCPS</label>
             </div>
             <div class="checkbox-container">
                 <input type="checkbox" @bind="sslVerify" id="sslVerify" />
@@ -61,19 +69,17 @@
     <button class="btn btn-primary" @onclick="BrowseQueueAsync">Browse Queue</button>
 
     <h4>Messages</h4>
-    <DataGrid
-            TItem="MessageDetails"
-            Data="@messages"
-            @ref="dataGrid"
-            RowOverlayBackground="Background.Transparent"
-            DetailRowStartsVisible="false"
-            Filterable
-            FilterMethod="DataGridFilterMethod.Contains"
-            ShowPager
-            ShowPageSizes
-            PagerPosition="DataGridPagerPosition.TopAndBottom"
-            PagerOptions="new(){ ButtonSize=Size.Small}"
-            >
+    <DataGrid TItem="MessageDetails"
+              Data="@messages"
+              @ref="dataGrid"
+              RowOverlayBackground="Background.Transparent"
+              DetailRowStartsVisible="false"
+              Filterable
+              FilterMethod="DataGridFilterMethod.StartsWith"
+              ShowPager
+              ShowPageSizes
+              PagerPosition="DataGridPagerPosition.TopAndBottom"
+              PagerOptions="new(){ ButtonSize=Size.Small}">
         <TotalItemsTemplate><Badge Color="Color.Success">@context.TotalItems total items</Badge></TotalItemsTemplate>
         <TotalItemsShortTemplate><Badge Color="Color.Success">@context.TotalItems</Badge></TotalItemsShortTemplate>
         <DataGridColumns>
@@ -139,29 +145,21 @@
     private string queueName;
     private int maxMessages = 50;
     private bool sslVerify = true;
-    private bool useTcps = true;
     private List<MessageDetails> messages = new List<MessageDetails>();
     private DataGrid<MessageDetails> dataGrid;
+    private string selectedPresetName;
+    private string presetName;
+    private List<PresetModel> presets = new List<PresetModel>();
 
     private bool isBrowsing = false;
-
-    private string FormatHost(string host, bool useTcps)
-    {
-        if (useTcps && !host.StartsWith("tcps://"))
-        {
-            return "tcps://" + host;
-        }
-        return host;
-    }
 
     private async Task BrowseQueueAsync()
     {
         Logger.LogInformation("BrowseQueue method called.");
         try
         {
-            string formattedHost = FormatHost(host, useTcps);
             isBrowsing = true;
-            messages = await QueueBrowserService.BrowseQueueAsync(formattedHost, vpnName, username, password, queueName, sslVerify, maxMessages);
+            messages = await QueueBrowserService.BrowseQueueAsync(host, vpnName, username, password, queueName, sslVerify, maxMessages);
             Logger.LogInformation("Messages retrieved: {count}", messages.Count);
         }
         catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
@@ -184,10 +182,9 @@
     {
         try
         {
-            string formattedHost = FormatHost(host, useTcps);
             isDeleting = true;
             deletingMessageId = adMessageId.ToString();
-            await QueueBrowserService.DeleteMessage(formattedHost, vpnName, username, password, queueName, sslVerify, adMessageId);
+            await QueueBrowserService.DeleteMessage(host, vpnName, username, password, queueName, sslVerify, adMessageId);
             toastService.ShowSuccess("Deleting message with ID: " + deletingMessageId);
             await BrowseQueueAsync();
         }
@@ -201,6 +198,11 @@
             isDeleting = false;
             deletingMessageId = "";
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        presets = await PresetService.GetPresetsAsync();
     }
 
     protected override void OnInitialized()
@@ -234,5 +236,28 @@
         }
 
         password = string.Empty;
+    }
+
+    private async Task LoadPreset(ChangeEventArgs e)
+    {
+        selectedPresetName = e.Value?.ToString();
+        Console.WriteLine($"Selected Preset Name: {selectedPresetName}");
+        if (!string.IsNullOrEmpty(selectedPresetName))
+        {
+            var preset = presets.FirstOrDefault(p => p.Name == selectedPresetName);
+            if (preset != null)
+            {
+                host = preset.Host;
+                vpnName = preset.VpnName;
+                username = preset.Username;
+                queueName = preset.QueueName;
+
+                Console.WriteLine($"Loaded Preset: {preset.Name}");
+            }
+            else
+            {
+                Console.WriteLine($"Preset with name '{selectedPresetName}' not found.");
+            }
+        }
     }
 }

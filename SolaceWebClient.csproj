@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="presets\example.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="trustedca\.keep" />
   </ItemGroup>
 
@@ -28,6 +32,10 @@
 
   <ItemGroup>
     <Folder Include="docs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="presets\example.json" />
   </ItemGroup>
 
 </Project>

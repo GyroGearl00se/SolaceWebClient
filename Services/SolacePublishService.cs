@@ -50,7 +50,10 @@ namespace SolaceWebClient.Services
                 using (IMessage msg = ContextFactory.Instance.CreateMessage())
                 {
                     msg.Destination = ContextFactory.Instance.CreateTopic(topic);
-                    msg.BinaryAttachment = Encoding.UTF8.GetBytes(message);
+                    if (!String.IsNullOrEmpty(message))
+                    {
+                        msg.BinaryAttachment = Encoding.UTF8.GetBytes(message);
+                    }
                     _session.Send(msg);
                 }
             }
