@@ -7,6 +7,11 @@ using System.Threading.Tasks;
 
 namespace SolaceWebClient.Services
 {
+    public class PresetGroupModel
+    {
+        public string GroupName { get; set; }
+        public List<PresetModel> Presets { get; set; }
+    }
     public class PresetModel
     {
         public string Name { get; set; }
@@ -15,36 +20,26 @@ namespace SolaceWebClient.Services
         public string Username { get; set; }
         public string QueueName { get; set; }
         public string Topic { get; set; }
+        public string SempUrl { get; set; }
+        public string sempUsername { get; set; }
     }
 
     public class PresetService
     {
         private readonly string presetsFilePath = Path.Combine("presets", "presets.json");
 
-        public async Task<List<PresetModel>> GetPresetsAsync()
+        public async Task<List<PresetGroupModel>> GetPresetGroupsAsync()
         {
             if (!File.Exists(presetsFilePath))
             {
-                return new List<PresetModel>();
+                return new List<PresetGroupModel>();
             }
 
             var json = await File.ReadAllTextAsync(presetsFilePath);
-            var presets = JsonSerializer.Deserialize<List<PresetModel>>(json);
+            var presetGroups = JsonSerializer.Deserialize<List<PresetGroupModel>>(json);
 
-            return presets ?? new List<PresetModel>();
-        }
-
-        public async Task SavePresetsAsync(List<PresetModel> presets)
-        {
-            var json = JsonSerializer.Serialize(presets, new JsonSerializerOptions { WriteIndented = true });
-            var directory = Path.GetDirectoryName(presetsFilePath);
-
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await File.WriteAllTextAsync(presetsFilePath, json);
+            return presetGroups ?? new List<PresetGroupModel>();
         }
     }
+
 }

@@ -12,14 +12,25 @@
     <Title>Queue Browser</Title>
 
     <div class="form-group">
-        <label>Select Preset</label>
-        <select class="form-select-sm" @onchange="LoadPreset">
-            <option value="">Select a preset</option>
-            @foreach (var preset in presets)
-            {
-                <option value="@preset.Name">@preset.Name</option>
-            }
-        </select>
+        <Dropdown @ref="presetDropdown">
+            <DropdownToggle Color="Color.Primary">@selectedPreset</DropdownToggle>
+            <DropdownMenu>
+                    @foreach (var group in presetGroups)
+                    {
+                    <Dropdown>
+                        <DropdownToggle> @group.GroupName </DropdownToggle>
+                        <DropdownMenu>
+                            <Dropdown>
+                                @foreach (var preset in group.Presets)
+                                {
+                                    <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
+                                }
+                            </Dropdown>
+                        </DropdownMenu>
+                    </Dropdown>
+                    }
+            </DropdownMenu>
+        </Dropdown>
     </div>
 
     <div class="overlay" style="display: @(isDeleting ? "block" : "none")">
@@ -147,9 +158,10 @@
     private bool sslVerify = true;
     private List<MessageDetails> messages = new List<MessageDetails>();
     private DataGrid<MessageDetails> dataGrid;
-    private string selectedPresetName;
-    private string presetName;
-    private List<PresetModel> presets = new List<PresetModel>();
+
+    private string selectedPreset = "Select Preset";
+    private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
+    Dropdown presetDropdown;
 
     private bool isBrowsing = false;
 
@@ -202,7 +214,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        presets = await PresetService.GetPresetsAsync();
+        presetGroups = await PresetService.GetPresetGroupsAsync();
     }
 
     protected override void OnInitialized()
@@ -238,26 +250,24 @@
         password = string.Empty;
     }
 
-    private async Task LoadPreset(ChangeEventArgs e)
+    private void LoadPreset(PresetModel preset)
     {
-        selectedPresetName = e.Value?.ToString();
-        Console.WriteLine($"Selected Preset Name: {selectedPresetName}");
-        if (!string.IsNullOrEmpty(selectedPresetName))
+        if (preset != null)
         {
-            var preset = presets.FirstOrDefault(p => p.Name == selectedPresetName);
-            if (preset != null)
-            {
-                host = preset.Host;
-                vpnName = preset.VpnName;
-                username = preset.Username;
-                queueName = preset.QueueName;
+            host = preset.Host;
+            vpnName = preset.VpnName;
+            username = preset.Username;
+            queueName = preset.QueueName;
+            selectedPreset = preset.Name;
 
-                Console.WriteLine($"Loaded Preset: {preset.Name}");
-            }
-            else
-            {
-                Console.WriteLine($"Preset with name '{selectedPresetName}' not found.");
-            }
+            Console.WriteLine($"Loaded Preset: {preset.Name}");
         }
+        HideDropdownMenu();
     }
+
+    Task HideDropdownMenu()
+    {
+        return presetDropdown.Hide();
+    }
+
 }

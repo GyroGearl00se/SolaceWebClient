@@ -5,6 +5,7 @@
 @inject SEMPService SEMPService
 @inject Blazored.Toast.Services.IToastService toastService
 @inject NavigationManager Navigation
+@inject PresetService PresetService
 
 <Layout>
     <Title>SEMP API</Title>
@@ -12,6 +13,27 @@
     <div class="form-container">
         <div class="form-section">
             <h4>SEMP Configuration</h4>
+            <div class="form-group">
+                <Dropdown @ref="presetDropdown">
+                    <DropdownToggle Color="Color.Primary">@selectedPreset</DropdownToggle>
+                    <DropdownMenu>
+                        @foreach (var group in presetGroups)
+                        {
+                            <Dropdown>
+                                <DropdownToggle> @group.GroupName </DropdownToggle>
+                                <DropdownMenu>
+                                    <Dropdown>
+                                        @foreach (var preset in group.Presets)
+                                        {
+                                            <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
+                                        }
+                                    </Dropdown>
+                                </DropdownMenu>
+                            </Dropdown>
+                        }
+                    </DropdownMenu>
+                </Dropdown>
+            </div>
             <div class="form-group">
                 <div class="input-with-checkbox">
                     <div class="input-container">
@@ -81,6 +103,10 @@
     private int smfsPort;
     private bool smfsEnabled;
 
+    private string selectedPreset = "Select Preset";
+    private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
+    Dropdown presetDropdown;
+
     private async Task GetQueues()
     {
         try
@@ -106,5 +132,29 @@
 
         var uri = $"queue-browser?&vpn={sempMessageVpn}&hostname={hostname}&queue={queueName}&username={queueOwner}";
         Navigation.NavigateTo(uri);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        presetGroups = await PresetService.GetPresetGroupsAsync();
+    }
+
+    private void LoadPreset(PresetModel preset)
+    {
+        if (preset != null)
+        {
+            sempUrl = preset.SempUrl;
+            sempMessageVpn = preset.VpnName;
+            sempUsername = preset.sempUsername;
+            selectedPreset = preset.Name;
+
+            Console.WriteLine($"Loaded Preset: {preset.Name}");
+        }
+        HideDropdownMenu();
+    }
+
+    Task HideDropdownMenu()
+    {
+        return presetDropdown.Hide();
     }
 }
