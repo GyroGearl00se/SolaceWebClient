@@ -22,14 +22,16 @@
                             <Dropdown>
                                 <DropdownToggle> @group.GroupName </DropdownToggle>
                                 <DropdownMenu>
-                                    <Dropdown>
-                                        @foreach (var preset in group.Presets)
-                                        {
-                                            <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
-                                        }
-                                    </Dropdown>
+                                    @foreach (var preset in group.Presets)
+                                    {
+                                        <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
+                                    }
                                 </DropdownMenu>
                             </Dropdown>
+                        }
+                        @foreach (var preset in ungroupedPresets)
+                        {
+                            <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
                         }
                     </DropdownMenu>
                 </Dropdown>
@@ -105,6 +107,7 @@
 
     private string selectedPreset = "Select Preset";
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
+    private List<PresetModel> ungroupedPresets = new List<PresetModel>();
     Dropdown presetDropdown;
 
     private async Task GetQueues()
@@ -137,6 +140,7 @@
     protected override async Task OnInitializedAsync()
     {
         presetGroups = await PresetService.GetPresetGroupsAsync();
+        ungroupedPresets = await PresetService.GetUngroupedPresetsAsync();
     }
 
     private void LoadPreset(PresetModel preset)

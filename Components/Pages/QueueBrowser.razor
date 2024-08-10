@@ -15,20 +15,22 @@
         <Dropdown @ref="presetDropdown">
             <DropdownToggle Color="Color.Primary">@selectedPreset</DropdownToggle>
             <DropdownMenu>
-                    @foreach (var group in presetGroups)
-                    {
+                @foreach (var group in presetGroups)
+                {
                     <Dropdown>
                         <DropdownToggle> @group.GroupName </DropdownToggle>
                         <DropdownMenu>
-                            <Dropdown>
-                                @foreach (var preset in group.Presets)
-                                {
-                                    <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
-                                }
-                            </Dropdown>
+                            @foreach (var preset in group.Presets)
+                            {
+                                <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
+                            }
                         </DropdownMenu>
                     </Dropdown>
-                    }
+                }
+                @foreach (var preset in ungroupedPresets)
+                {
+                    <DropdownItem @onclick="() => LoadPreset(preset)">@preset.Name</DropdownItem>
+                }
             </DropdownMenu>
         </Dropdown>
     </div>
@@ -161,6 +163,7 @@
 
     private string selectedPreset = "Select Preset";
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
+    private List<PresetModel> ungroupedPresets = new List<PresetModel>();
     Dropdown presetDropdown;
 
     private bool isBrowsing = false;
@@ -215,6 +218,7 @@
     protected override async Task OnInitializedAsync()
     {
         presetGroups = await PresetService.GetPresetGroupsAsync();
+        ungroupedPresets = await PresetService.GetUngroupedPresetsAsync();
     }
 
     protected override void OnInitialized()

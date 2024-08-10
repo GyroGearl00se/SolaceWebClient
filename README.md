@@ -24,6 +24,7 @@ The Solace Web Client is a .NET (C#) application that offers comprehensive funct
 
 ## Presets
 The Solace Web Client allows you to manage connection presets, making it easy to switch between different configurations.
+You can either create presets directly (i.e. Exampele 5) or group them (i.e. "test" & "prod").
 
 Create a presets.json and mount it in `/app/presets/presets.json`.
 
@@ -77,6 +78,16 @@ Example:
         "sempUsername": "admin"
       }
     ]
+  },
+  {
+    "Name": "Example 5",
+    "Host": "tcps://broker.domain:55443",
+    "VpnName": "default",
+    "Username": "demo",
+    "Topic": "a/b/c",
+    "QueueName": "myqueue",
+    "SempUrl": "https://broker.domain:1943",
+    "sempUsername": "admin"
   }
 ]
 

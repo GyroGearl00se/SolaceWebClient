@@ -10,8 +10,9 @@ namespace SolaceWebClient.Services
     public class PresetGroupModel
     {
         public string GroupName { get; set; }
-        public List<PresetModel> Presets { get; set; }
+        public List<PresetModel> Presets { get; set; } = new List<PresetModel>(); // Initialisiere die Liste
     }
+
     public class PresetModel
     {
         public string Name { get; set; }
@@ -23,6 +24,12 @@ namespace SolaceWebClient.Services
         public string SempUrl { get; set; }
         public string sempUsername { get; set; }
     }
+
+    public class UngroupedPresetModel : PresetModel
+    {
+
+    }
+
 
     public class PresetService
     {
@@ -36,9 +43,54 @@ namespace SolaceWebClient.Services
             }
 
             var json = await File.ReadAllTextAsync(presetsFilePath);
-            var presetGroups = JsonSerializer.Deserialize<List<PresetGroupModel>>(json);
+            var allPresets = JsonSerializer.Deserialize<List<JsonElement>>(json);
 
-            return presetGroups ?? new List<PresetGroupModel>();
+            var groupedPresets = new List<PresetGroupModel>();
+            var ungroupedPresets = new List<PresetModel>();
+
+            foreach (var item in allPresets)
+            {
+                if (item.TryGetProperty("Presets", out _))
+                {
+                    var group = JsonSerializer.Deserialize<PresetGroupModel>(item.GetRawText());
+                    groupedPresets.Add(group);
+                }
+                else if (item.TryGetProperty("Name", out _))
+                {
+                    var preset = JsonSerializer.Deserialize<PresetModel>(item.GetRawText());
+                    ungroupedPresets.Add(preset);
+                }
+            }
+            return groupedPresets;
+        }
+
+        public async Task<List<PresetModel>> GetUngroupedPresetsAsync()
+        {
+            if (!File.Exists(presetsFilePath))
+            {
+                return new List<PresetModel>();
+            }
+
+            var json = await File.ReadAllTextAsync(presetsFilePath);
+            var allPresets = JsonSerializer.Deserialize<List<JsonElement>>(json);
+
+            var ungroupedPresets = new List<PresetModel>();
+
+            foreach (var item in allPresets)
+            {
+                if (item.TryGetProperty("Presets", out _))
+                {
+                    continue;
+                }
+
+                if (item.TryGetProperty("Name", out _))
+                {
+                    var preset = JsonSerializer.Deserialize<PresetModel>(item.GetRawText());
+                    ungroupedPresets.Add(preset);
+                }
+            }
+
+            return ungroupedPresets;
         }
     }
 

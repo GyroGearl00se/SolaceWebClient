@@ -46,5 +46,15 @@
         "sempUsername": "admin"
       }
     ]
+  },
+  {
+    "Name": "Example 5",
+    "Host": "tcps://broker.domain:55443",
+    "VpnName": "default",
+    "Username": "demo",
+    "Topic": "a/b/c",
+    "QueueName": "myqueue",
+    "SempUrl": "https://broker.domain:1943",
+    "sempUsername": "admin"
   }
 ]

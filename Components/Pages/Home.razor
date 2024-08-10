@@ -21,14 +21,16 @@
                         <Dropdown>
                             <DropdownToggle> @group.GroupName </DropdownToggle>
                             <DropdownMenu>
-                                <Dropdown>
-                                    @foreach (var preset in group.Presets)
-                                    {
-                                        <DropdownItem @onclick="() => LoadPresetPublish(preset)">@preset.Name</DropdownItem>
-                                    }
-                                </Dropdown>
+                                @foreach (var preset in group.Presets)
+                                {
+                                    <DropdownItem @onclick="() => LoadPresetPublish(preset)">@preset.Name</DropdownItem>
+                                }
                             </DropdownMenu>
                         </Dropdown>
+                    }
+                    @foreach (var preset in ungroupedPresets)
+                    {
+                        <DropdownItem @onclick="() => LoadPresetPublish(preset)">@preset.Name</DropdownItem>
                     }
                 </DropdownMenu>
             </Dropdown>
@@ -79,14 +81,16 @@
                         <Dropdown>
                             <DropdownToggle> @group.GroupName </DropdownToggle>
                             <DropdownMenu>
-                                <Dropdown>
-                                    @foreach (var preset in group.Presets)
-                                    {
-                                        <DropdownItem @onclick="() => LoadPresetSubscribe(preset)">@preset.Name</DropdownItem>
-                                    }
-                                </Dropdown>
+                                @foreach (var preset in group.Presets)
+                                {
+                                    <DropdownItem @onclick="() => LoadPresetSubscribe(preset)">@preset.Name</DropdownItem>
+                                }
                             </DropdownMenu>
                         </Dropdown>
+                    }
+                    @foreach (var preset in ungroupedPresets)
+                    {
+                        <DropdownItem @onclick="() => LoadPresetSubscribe(preset)">@preset.Name</DropdownItem>
                     }
                 </DropdownMenu>
             </Dropdown>
@@ -153,12 +157,14 @@
     Dropdown pubPresetDropdown;
     Dropdown subPresetDropdown;
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
+    private List<PresetModel> ungroupedPresets = new List<PresetModel>();
 
     private List<string> messages = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
         presetGroups = await PresetService.GetPresetGroupsAsync();
+        ungroupedPresets = await PresetService.GetUngroupedPresetsAsync();
     }
 
     private async Task LoadPresetPublish(PresetModel preset)
