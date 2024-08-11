@@ -7,6 +7,7 @@
 @inject Blazored.Toast.Services.IToastService toastService
 @inject NavigationManager Navigation
 @inject PresetService PresetService
+@inject IMessageService MessageService
 
 <Layout>
     <Title>Queue Browser</Title>
@@ -104,6 +105,7 @@
             <DataGridColumn TItem="MessageDetails" Field="ApplicationMessageType" Caption="Message Type" />
             <DataGridColumn TItem="MessageDetails" Field="CorrelationId" Caption="Correlation ID" />
             <DataGridColumn TItem="MessageDetails" Field="DeliveryMode" Caption="Delivery Mode" />
+            <DataGridNumericColumn TItem="MessageDetails" DisplayFormat="{0:N0}" Field="Size" Caption="Size in bytes (experimental)" />
         </DataGridColumns>
         <RowOverlayTemplate>
             <Div>
@@ -195,24 +197,32 @@
 
     private async Task DeleteMessage(long adMessageId)
     {
-        try
+        if (await MessageService.Confirm("Are you sure you want to delete message with ID: " + adMessageId + " ?", "Confirmation"))
         {
-            isDeleting = true;
-            deletingMessageId = adMessageId.ToString();
-            await QueueBrowserService.DeleteMessage(host, vpnName, username, password, queueName, sslVerify, adMessageId);
-            toastService.ShowSuccess("Deleting message with ID: " + deletingMessageId);
-            await BrowseQueueAsync();
+            try
+            {
+                isDeleting = true;
+                deletingMessageId = adMessageId.ToString();
+                await QueueBrowserService.DeleteMessage(host, vpnName, username, password, queueName, sslVerify, adMessageId);
+                toastService.ShowSuccess("Deleting message with ID: " + deletingMessageId);
+                await BrowseQueueAsync();
+            }
+            catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
+            {
+                toastService.ShowError($"Error deleting Message: {ex.ErrorInfo}");
+            }
+            finally
+            {
+                await Task.Delay(2000);
+                isDeleting = false;
+                deletingMessageId = "";
+            }
         }
-        catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
+        else
         {
-            toastService.ShowError($"Error deleting Message: {ex.ErrorInfo}");
+            Console.WriteLine("Cancel Clicked");
         }
-        finally
-        {
-            await Task.Delay(2000);
-            isDeleting = false;
-            deletingMessageId = "";
-        }
+        
     }
 
     protected override async Task OnInitializedAsync()

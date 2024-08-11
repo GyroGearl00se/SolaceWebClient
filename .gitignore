@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 trustedca/*
 !trustedca/.keep
+
+presets/presets.json

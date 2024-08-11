@@ -198,3 +198,7 @@ h1:focus {
     margin-left: 10px;
     white-space: nowrap;
 }
+
+.modal-content {
+    background-color: #303030;
+}

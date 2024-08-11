@@ -22,6 +22,7 @@ namespace SolaceWebClient.Services
         public string FormattedDateTime { get; set; }
         public Dictionary<string, object> UserProperties { get; set; }
         public string DeliveryMode { get; set; }
+        public int Size { get; set; }
     }
 
     public class QueueBrowserService
@@ -100,7 +101,7 @@ namespace SolaceWebClient.Services
 
                             if (message.SenderTimestamp == -1)
                             {
-                                formattedDateTime = "N/A";
+                                formattedDateTime = "";
                             } else
                             {
                                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(message.SenderTimestamp);
@@ -143,20 +144,37 @@ namespace SolaceWebClient.Services
                                     messageContent = "";
                                 }
                             }
+                            Console.WriteLine($"Message ID: {message.ADMessageId}");
+                            int messageSize = 0;
+                            if (message.BinaryAttachment != null)
+                            {
+                                byte[] binaryAttachment = message.BinaryAttachment;
+                                messageSize = binaryAttachment.Length;
+                            }
+                            else if (message.XmlContent != null)
+                            {
+                                messageSize = message.XmlContent.Length;
+                            }
+                            else if (SDTUtils.GetText(message) != null)
+                            {
+                                messageSize = SDTUtils.GetText(message).Length;
+                            }
 
+                            Console.WriteLine($"################# Message size: {messageSize.ToString("N0")} bytes");
                             messages.Add(new MessageDetails
                             {
-                                DestinationName = message.Destination.Name != null ? message.Destination.Name : "N/A",
-                                ApplicationMessageType = message.ApplicationMessageType != null ? message.ApplicationMessageType : "N/A",
-                                ApplicationMessageId = message.ApplicationMessageId != null ? message.ApplicationMessageId : "N/A",
-                                SenderId = message.SenderId != null ? message.SenderId : "N/A",
+                                DestinationName = message.Destination.Name != null ? message.Destination.Name : "",
+                                ApplicationMessageType = message.ApplicationMessageType != null ? message.ApplicationMessageType : "",
+                                ApplicationMessageId = message.ApplicationMessageId != null ? message.ApplicationMessageId : "",
+                                SenderId = message.SenderId != null ? message.SenderId : "",
                                 MessageContent = messageContent,
                                 MessageContentXML = message.XmlContent != null ? System.Text.Encoding.ASCII.GetString(message.XmlContent) : "",
-                                CorrelationId = message.CorrelationId != null ? message.CorrelationId : "N/A",
+                                CorrelationId = message.CorrelationId != null ? message.CorrelationId : "",
                                 ADMessageId = message.ADMessageId != 0 ? message.ADMessageId : 0,
                                 FormattedDateTime = formattedDateTime,
                                 UserProperties = keyValuePairs,
-                                DeliveryMode = message.DeliveryMode.ToString()
+                                DeliveryMode = message.DeliveryMode.ToString(),
+                                Size = messageSize
                             });
                             messageCount++;
                         }

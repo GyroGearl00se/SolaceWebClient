@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Content Remove="presets\example.json" />
+    <Content Remove="presets\presets.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="presets\presets.json" />
     <None Include="presets\example.json" />
   </ItemGroup>
 
