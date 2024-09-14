@@ -113,6 +113,11 @@ docker run -d -p 8080:8080 -v $(pwd)/certs:/app/trustedca -v $(pwd)/presets.json
 
 Note: It is possible to disable SSL verification by unchecking "SSL Verify", though this is not recommended for production environments.
 
+### Build
+If you want to build the container image from this project:
+```
+docker build -t gyrogearl00se/solacewebclient:<tag> --file Dockerfile .
+```
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request or open an Issue to discuss any changes.
