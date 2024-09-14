@@ -124,6 +124,7 @@
             <input @bind="subscribeTopic" name="subscribeTopic" autocomplete="on" placeholder="topic" />
         </div>
         <button class="btn btn-primary" @onclick="SubscribeToTopic">Subscribe</button>
+        <button class="btn btn-primary" @onclick="Unsubscribe">Unsubscribe</button>
     </div>
 </div>
 
@@ -231,7 +232,21 @@
             toastService.ShowError($"Error starting Subscription: {ex.ErrorInfo}");
         }
 
-        
+
+    }
+
+    public void Unsubscribe()
+    {
+        try
+        {
+            SubscribeService.Disconnect();
+            toastService.ShowSuccess("Subscription stopped");
+        }
+        catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
+        {
+            toastService.ShowError($"Error: {ex.ErrorInfo}");
+        }
+
     }
 
     public void Dispose()
