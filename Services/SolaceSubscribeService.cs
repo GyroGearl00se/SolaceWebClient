@@ -23,6 +23,11 @@ namespace SolaceWebClient.Services
         {
             try
             {
+                if (_session != null)
+                {
+                    Disconnect();
+                }
+
                 ContextFactoryProperties cfp = new ContextFactoryProperties()
                 {
                     SolClientLogLevel = SolLogLevel.Warning
@@ -30,11 +35,6 @@ namespace SolaceWebClient.Services
                 cfp.LogToConsoleError();
                 ContextFactory.Instance.Init(cfp);
                 _context = ContextFactory.Instance.CreateContext(new ContextProperties(), null);
-
-                if (_session != null)
-                {
-                    Disconnect();
-                }
 
                 SessionProperties sessionProps = new SessionProperties()
                 {
