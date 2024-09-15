@@ -100,7 +100,7 @@ To run the Solace Web Client using Docker, you can use the following commands:
 
 #### Basic Run
 ```sh
-docker run -d -p 8080:8080 gyrogearl00se/solacewebclient:latest
+docker run -d -p 8088:8080 gyrogearl00se/solacewebclient:latest
 ```
 
 #### Optional mounts
@@ -108,7 +108,7 @@ docker run -d -p 8080:8080 gyrogearl00se/solacewebclient:latest
 - To validate secure connections (tcps://), mount the certificate(s) from your desired endpoint(s) in the /app/trustedca directory.
 - To use presets,mount your presets.json into /app/presets/preset.json
 
-docker run -d -p 8080:8080 -v $(pwd)/certs:/app/trustedca -v $(pwd)/presets.json:/app/presets/presets.json gyrogearl00se/solacewebclient:latest
+docker run -d -p 8088:8080 -v $(pwd)/certs:/app/trustedca -v $(pwd)/presets.json:/app/presets/presets.json gyrogearl00se/solacewebclient:latest
 ```
 
 Note: It is possible to disable SSL verification by unchecking "SSL Verify", though this is not recommended for production environments.
