@@ -1,11 +1,14 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @using SolaceWebClient.Services
+@using Blazorise
+@using Blazorise.DataGrid
 @inject SolacePublishService PublishService
 @inject SolaceSubscribeService SubscribeService
 @inject Blazored.Toast.Services.IToastService toastService
 @implements IDisposable
 @inject PresetService PresetService
+@inject IJSRuntime JSRuntime
 
 <h3>Solace PubSub+</h3>
 
@@ -128,15 +131,93 @@
     </div>
 </div>
 
-<div>
-    <h4>Messages</h4>
-    <ul>
-        @foreach (var message in messages)
-        {
-            <li>@message</li>
-        }
-    </ul>
-</div>
+<DataGrid TItem="MessageDetails"
+          Data="@messages"
+          @ref="dataGrid"
+          RowOverlayBackground="Background.Transparent"
+          DetailRowStartsVisible="false"
+          Filterable
+          FilterMethod="DataGridFilterMethod.StartsWith"
+          ShowPager
+          ShowPageSizes
+          PagerPosition="DataGridPagerPosition.TopAndBottom"
+          PagerOptions="new(){ ButtonSize=Size.Small}"
+          Class="datagrid">
+    <TotalItemsTemplate><Badge Color="Color.Success">@context.TotalItems total items</Badge></TotalItemsTemplate>
+    <TotalItemsShortTemplate><Badge Color="Color.Success">@context.TotalItems</Badge></TotalItemsShortTemplate>
+    <DataGridColumns>
+        <DataGridColumn TItem="MessageDetails" Field="ADMessageId" Caption="Message ID" />
+        <DataGridColumn TItem="MessageDetails" Field="FormattedDateTime" Caption="Sender Timestamp" />
+        <DataGridColumn TItem="MessageDetails" Field="DestinationName" Caption="Destination" />
+        <DataGridColumn TItem="MessageDetails" Field="ApplicationMessageId" Caption="Application Message ID" />
+        <DataGridColumn TItem="MessageDetails" Field="SenderId" Caption="Sender ID" />
+        <DataGridColumn TItem="MessageDetails" Field="ApplicationMessageType" Caption="Message Type" />
+        <DataGridColumn TItem="MessageDetails" Field="CorrelationId" Caption="Correlation ID" />
+        <DataGridColumn TItem="MessageDetails" Field="DeliveryMode" Caption="Delivery Mode" />
+        <DataGridNumericColumn TItem="MessageDetails" DisplayFormat="{0:N0}" Field="Size" Caption="Size in bytes (experimental)" />
+    </DataGridColumns>
+    <DetailRowTemplate Context="message">
+        <div class="detail-row-user-properties">
+            <h3>User Properties:</h3>
+            @if (message.UserProperties != null)
+            {
+                foreach (var property in message.UserProperties)
+                {
+                    <p>@property.Key: @property.Value</p>
+                }
+            }
+            else
+            {
+                <p>No user properties</p>
+            }
+        </div>
+        <div class="detail-row-message-content">
+            <h3>Content:</h3>
+            @if (!string.IsNullOrWhiteSpace(message.MessageContent))
+            {
+                <button class="btn btn-primary"
+                         @onclick="async () => await DownloadFileAsync(message)"
+                         @onclick:preventDefault="true">
+                    Download
+                </button>
+                <br>
+                <div>
+                    @message.MessageContent
+                </div>
+                <br>
+            }
+            else if (!string.IsNullOrWhiteSpace(message.MessageContentXML))
+            {
+                <button class="btn btn-primary"
+                        @onclick="async () => await DownloadFileXMLAsync(message)"
+                        @onclick:preventDefault="true">
+                    Download
+                </button>
+                <pre><code>@message.MessageContentXML</code></pre>
+            }
+            else
+            {
+                <p>No content available</p>
+            }
+        </div>
+        
+
+
+    </DetailRowTemplate>
+</DataGrid>
+
+<script>
+    function downloadFileFromBase64(fileName, contentBase64) {
+        const link = document.createElement('a');
+        link.href = contentBase64;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+
 
 @code {
     private string publishHost;
@@ -160,7 +241,8 @@
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
     private List<PresetModel> ungroupedPresets = new List<PresetModel>();
 
-    private List<string> messages = new List<string>();
+    private DataGrid<MessageDetails> dataGrid;
+    private List<MessageDetails> messages = new List<MessageDetails>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -222,6 +304,7 @@
                 InvokeAsync(() =>
                 {
                     messages.Add(message);
+                    dataGrid.Reload();
                     StateHasChanged();
                 });
             });
@@ -263,5 +346,26 @@
     Task HideSubDropdownMenu()
     {
         return subPresetDropdown.Hide();
+    }
+
+    private async Task DownloadFileAsync(MessageDetails message)
+    {
+        var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContent);
+        var base64 = Convert.ToBase64String(byteArray);
+        var fileContent = $"data:text/plain;base64,{base64}";
+        DateTime timenow = DateTime.Now;
+        var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".txt";
+
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
+    }
+    private async Task DownloadFileXMLAsync(MessageDetails message)
+    {
+        var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContentXML);
+        var base64 = Convert.ToBase64String(byteArray);
+        var fileContent = $"data:text/plain;base64,{base64}";
+        DateTime timenow = DateTime.Now;
+        var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".xml";
+
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
     }
 }
