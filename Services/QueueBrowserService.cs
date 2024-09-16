@@ -59,7 +59,6 @@ namespace SolaceWebClient.Services
 
         public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, string username, string password, string queueName, bool sslVerify, int maxMessages)
         {
-            _logger.LogInformation("Queue Browsing started.");
             List<MessageDetails> messages = new List<MessageDetails>();
             try
             {
@@ -81,7 +80,6 @@ namespace SolaceWebClient.Services
                     throw new Exception("Failed to connect to Solace broker.");
                 }
 
-                _logger.LogInformation("Browsing queue: {queueName}", queueName);
                 using (IQueue queue = ContextFactory.Instance.CreateQueue(queueName))
                 {
                     BrowserProperties browserProps = new BrowserProperties()
@@ -95,7 +93,6 @@ namespace SolaceWebClient.Services
                         int messageCount = 0;
                         while ((message = await Task.Run(() => browser.GetNext())) != null && messageCount < maxMessages)
                         {
-                            //_logger.LogInformation("Message received: {message}", Encoding.UTF8.GetString(message.BinaryAttachment));
 
                             string formattedDateTime;
 
@@ -144,7 +141,7 @@ namespace SolaceWebClient.Services
                                     messageContent = "";
                                 }
                             }
-                            Console.WriteLine($"Message ID: {message.ADMessageId}");
+
                             int messageSize = 0;
                             if (message.BinaryAttachment != null)
                             {
@@ -160,7 +157,6 @@ namespace SolaceWebClient.Services
                                 messageSize = SDTUtils.GetText(message).Length;
                             }
 
-                            Console.WriteLine($"################# Message size: {messageSize.ToString("N0")} bytes");
                             messages.Add(new MessageDetails
                             {
                                 DestinationName = message.Destination.Name != null ? message.Destination.Name : "",
