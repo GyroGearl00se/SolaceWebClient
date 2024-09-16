@@ -8,6 +8,7 @@
 @inject NavigationManager Navigation
 @inject PresetService PresetService
 @inject IMessageService MessageService
+@inject IJSRuntime JSRuntime
 
 <Layout>
     <Title>Queue Browser</Title>
@@ -115,38 +116,48 @@
             </Div>
         </RowOverlayTemplate>
         <DetailRowTemplate Context="message">
-            <div class="message-content">
-                <div class="parent" style="display: flex;">
-                    <div class="content" style="flex: 1; border-right: 2px solid black; overflow: hidden;">
-                        @if (!string.IsNullOrWhiteSpace(message.MessageContent))
-                        {
-                            <br>
-                            @message.MessageContent
-                            <br>
-                        }
-                        else if (!string.IsNullOrWhiteSpace(message.MessageContentXML))
-                        {
-                            <pre><code>@message.MessageContentXML</code></pre>
-                        }
-                        else
-                        {
-                            <p>No content available</p>
-                        }
+            <div class="detail-row-user-properties">
+                <h3>User Properties:</h3>
+                @if (message.UserProperties != null)
+                {
+                    foreach (var property in message.UserProperties)
+                    {
+                        <p>@property.Key: @property.Value</p>
+                    }
+                }
+                else
+                {
+                    <p>No user properties</p>
+                }
+            </div>
+            <div class="detail-row-message-content">
+                <h3>Content:</h3>
+                @if (!string.IsNullOrWhiteSpace(message.MessageContent))
+                {
+                    <button class="btn btn-primary"
+                            @onclick="async () => await DownloadFileAsync(message)"
+                            @onclick:preventDefault="true">
+                        Download
+                    </button>
+                    <br>
+                    <div>
+                        @message.MessageContent
                     </div>
-                    <div class="content" style="margin-left: 2px;">
-                        @if (message.UserProperties != null)
-                        {
-                            foreach (var property in message.UserProperties)
-                            {
-                                <p>@property.Key: @property.Value</p>
-                            }
-                        }
-                        else
-                        {
-                            <p>No user properties</p>
-                        }
-                    </div>
-                </div>
+                    <br>
+                }
+                else if (!string.IsNullOrWhiteSpace(message.MessageContentXML))
+                {
+                    <button class="btn btn-primary"
+                            @onclick="async () => await DownloadFileXMLAsync(message)"
+                            @onclick:preventDefault="true">
+                        Download
+                    </button>
+                    <pre><code>@message.MessageContentXML</code></pre>
+                }
+                else
+                {
+                    <p>No content available</p>
+                }
             </div>
         </DetailRowTemplate>
     </DataGrid>
@@ -277,6 +288,27 @@
     Task HideDropdownMenu()
     {
         return presetDropdown.Hide();
+    }
+
+    private async Task DownloadFileAsync(MessageDetails message)
+    {
+        var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContent);
+        var base64 = Convert.ToBase64String(byteArray);
+        var fileContent = $"data:text/plain;base64,{base64}";
+        DateTime timenow = DateTime.Now;
+        var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".txt";
+
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
+    }
+    private async Task DownloadFileXMLAsync(MessageDetails message)
+    {
+        var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContentXML);
+        var base64 = Convert.ToBase64String(byteArray);
+        var fileContent = $"data:text/plain;base64,{base64}";
+        DateTime timenow = DateTime.Now;
+        var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".xml";
+
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
     }
 
 }
