@@ -172,7 +172,6 @@
 
     private async Task BrowseQueueAsync()
     {
-        Logger.LogInformation("BrowseQueue method called.");
         try
         {
             isBrowsing = true;
@@ -217,10 +216,6 @@
                 isDeleting = false;
                 deletingMessageId = "";
             }
-        }
-        else
-        {
-            Console.WriteLine("Cancel Clicked");
         }
         
     }
