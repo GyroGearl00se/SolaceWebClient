@@ -202,19 +202,3 @@ h1:focus {
 .modal-content {
     background-color: #303030;
 }
-
-.datagrid tbody tr:hover {
-    color: #00C895;
-}
-
-.detail-row-user-properties {
-    color: #e0e0e0;
-}
-
-.detail-row-message-content {
-    color: #e0e0e0;
-    max-width: 90em;
-    overflow: clip;
-    border: 1px solid #ccc;
-    padding: 10px;
-}
