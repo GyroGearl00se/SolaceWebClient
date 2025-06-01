@@ -2,6 +2,7 @@
 @using SolaceWebClient.Services
 @using Blazorise
 @using Blazorise.DataGrid
+@using SolaceSystems.Solclient.Messaging
 @inject QueueBrowserService QueueBrowserService
 @inject ILogger<QueueBrowser> Logger
 @inject Blazored.Toast.Services.IToastService toastService
@@ -65,14 +66,53 @@
         <label>VPN Name</label>
         <input @bind="vpnName" name="vpnName" autocomplete="on" placeholder="default" />
     </div>
+
     <div class="form-group">
-        <label>Username</label>
-        <input @bind="username" name="username" autocomplete="on" placeholder="Username" />
+        <label for="authScheme">Authentication Scheme:</label>
+        <select id="authScheme" @onchange="OnAuthSchemeChanged" Color="Color.Primary">
+            <option value="BASIC" selected>BASIC</option>
+            <!--<option value="CLIENT_CERTIFICATE">CLIENT_CERTIFICATE</option>-->
+            <option value="OAUTH2">OAUTH2</option>
+        </select>
     </div>
-    <div class="form-group">
-        <label>Password</label>
-        <input @bind="password" type="password" autocomplete="on" placeholder="Password" />
-    </div>
+
+    @if (auth.Scheme == AuthenticationSchemes.BASIC)
+    {
+        <div class="form-group" id="basicInputs">
+            <label for="username">Username:</label>
+            <input type="text" id="username" @bind="auth.Username" />
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" @bind="auth.Password" />
+        </div>
+    }
+    else if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+    {
+        <div class="form-group" id="clientCertInputs">
+            <label for="keystorePath">Keystore Path:</label>
+            <input type="text" id="keystorePath" @bind="auth.KeystorePath" />
+            
+            <label for="keystorePassphrase">Keystore Passphrase:</label>
+            <input type="password" id="keystorePassphrase" @bind="auth.KeystorePassphrase" />
+        </div>
+    }
+    else if (auth.Scheme == AuthenticationSchemes.OAUTH2)
+    {
+        <div class="form-group" id="oauthInputs">
+            <label for="clientId">Client ID:</label>
+            <input type="text" id="clientId" @bind="auth.ClientId" />
+            
+            <label for="clientSecret">Client Secret:</label>
+            <input type="password" id="clientSecret" @bind="auth.ClientSecret" />
+            
+            <label for="scope">Scope:</label>
+            <input type="text" id="scope" @bind="auth.Scope" />
+            
+            <label for="issuerUri">Issuer URI:</label>
+            <input type="text" id="issuerUri" @bind="auth.IssuerUri" />
+        </div>
+    }
+
     <div class="form-group">
         <label>Queue Name</label>
         <input @bind="queueName" name="queueName" autocomplete="on" placeholder="Queue Name" />
@@ -166,8 +206,6 @@
 @code {
     private string host;
     private string vpnName;
-    private string username;
-    private string password;
     private string queueName;
     private int maxMessages = 50;
     private bool sslVerify = true;
@@ -181,12 +219,31 @@
 
     private bool isBrowsing = false;
 
+    private Authentication auth = new Authentication();
+
+    private void OnAuthSchemeChanged(ChangeEventArgs e)
+    {
+        switch (e.Value.ToString())
+        {
+            case "CLIENT_CERTIFICATE":
+                auth.Scheme = AuthenticationSchemes.CLIENT_CERTIFICATE;
+                break;
+            case "OAUTH2":
+                auth.Scheme = AuthenticationSchemes.OAUTH2;
+                break;
+            case "BASIC":
+            default:
+                auth.Scheme = AuthenticationSchemes.BASIC;
+                break;
+        }
+    }
+
     private async Task BrowseQueueAsync()
     {
         try
         {
             isBrowsing = true;
-            messages = await QueueBrowserService.BrowseQueueAsync(host, vpnName, username, password, queueName, sslVerify, maxMessages);
+            messages = await QueueBrowserService.BrowseQueueAsync(host, vpnName, auth, queueName, sslVerify, maxMessages);
             Logger.LogInformation("Messages retrieved: {count}", messages.Count);
         }
         catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
@@ -213,7 +270,7 @@
             {
                 isDeleting = true;
                 deletingMessageId = adMessageId.ToString();
-                await QueueBrowserService.DeleteMessage(host, vpnName, username, password, queueName, sslVerify, adMessageId);
+                await QueueBrowserService.DeleteMessage(host, vpnName, auth, queueName, sslVerify, adMessageId);
                 toastService.ShowSuccess("Deleting message with ID: " + deletingMessageId);
                 await BrowseQueueAsync();
             }
@@ -259,7 +316,7 @@
 
         if (queryParams.TryGetValue("username", out var usernameValue))
         {
-            username = usernameValue;
+            auth.Username = usernameValue;
         }
 
         if (queryParams.TryGetValue("hostname", out var hostnameValue))
@@ -267,7 +324,7 @@
             host = hostnameValue;
         }
 
-        password = string.Empty;
+        auth.Password = string.Empty;
     }
 
     private void LoadPreset(PresetModel preset)
@@ -276,7 +333,7 @@
         {
             host = preset.Host;
             vpnName = preset.VpnName;
-            username = preset.Username;
+            auth.Username = preset.Username;
             queueName = preset.QueueName;
             selectedPreset = preset.Name;
 
