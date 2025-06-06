@@ -1,6 +1,9 @@
 ﻿using SolaceSystems.Solclient.Messaging;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -57,17 +60,22 @@ namespace SolaceWebClient.Services
 
         
 
-        public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, string username, string password, string queueName, bool sslVerify, int maxMessages)
+        public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, Authentication auth, string queueName, bool sslVerify, int maxMessages)
         {
             List<MessageDetails> messages = new List<MessageDetails>();
             try
             {
+                OAuth2 oauth2 = new OAuth2();
                 SessionProperties sessionProps = new SessionProperties()
                 {
                     Host = host,
                     VPNName = vpnName,
-                    UserName = username,
-                    Password = password,
+                    AuthenticationScheme = auth.Scheme,
+
+                    UserName = auth.Username,
+                    Password = auth.Password,
+
+                    OAuth2AccessToken = oauth2.GetToken(auth),
                     SSLValidateCertificate = sslVerify,
                     SSLTrustStoreDir = "trustedca"
                 };
@@ -195,17 +203,22 @@ namespace SolaceWebClient.Services
             return messages;
         }
 
-        public async Task DeleteMessage(string host, string vpnName, string username, string password, string queueName, bool sslVerify, long adMessageId)
+        public async Task DeleteMessage(string host, string vpnName, Authentication auth, string queueName, bool sslVerify, long adMessageId)
         {
             _logger.LogInformation("Delete Message process started.");
             try
             {
+                OAuth2 oauth2 = new OAuth2();
                 SessionProperties sessionProps = new SessionProperties()
                 {
                     Host = host,
                     VPNName = vpnName,
-                    UserName = username,
-                    Password = password,
+                    AuthenticationScheme = auth.Scheme,
+
+                    UserName = auth.Username,
+                    Password = auth.Password,
+
+                    OAuth2AccessToken = oauth2.GetToken(auth),
                     ReconnectRetries = 3,
                     SSLValidateCertificate = sslVerify,
                     SSLTrustStoreDir = "trustedca"
