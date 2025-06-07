@@ -14,24 +14,24 @@ namespace SolaceWebClient.Services
 {
     public class MessageDetails
     {
-        public string DestinationName { get; set; }
-        public string ApplicationMessageId { get; set; }
-        public string SenderId { get; set; }
-        public string MessageContent { get; set; }
-        public string MessageContentXML { get; set; }
-        public string ApplicationMessageType { get; set; }
-        public string CorrelationId { get; set; }
+        public string? DestinationName { get; set; }
+        public string? ApplicationMessageId { get; set; }
+        public string? SenderId { get; set; }
+        public string? MessageContent { get; set; }
+        public string? MessageContentXML { get; set; }
+        public string? ApplicationMessageType { get; set; }
+        public string? CorrelationId { get; set; }
         public long ADMessageId { get; set; }
-        public string FormattedDateTime { get; set; }
-        public Dictionary<string, object> UserProperties { get; set; }
-        public string DeliveryMode { get; set; }
+        public string? FormattedDateTime { get; set; }
+        public Dictionary<string, object>? UserProperties { get; set; }
+        public string? DeliveryMode { get; set; }
         public int Size { get; set; }
     }
 
     public class QueueBrowserService
     {
         private IContext _context;
-        private ISession _session;
+        private ISession? _session;
         private readonly ILogger<QueueBrowserService> _logger;
 
         public QueueBrowserService(ILogger<QueueBrowserService> logger)
@@ -58,27 +58,54 @@ namespace SolaceWebClient.Services
             }
         }
 
-        
-
         public async Task<List<MessageDetails>> BrowseQueueAsync(string host, string vpnName, Authentication auth, string queueName, bool sslVerify, int maxMessages)
         {
             List<MessageDetails> messages = new List<MessageDetails>();
             try
             {
-                OAuth2 oauth2 = new OAuth2();
                 SessionProperties sessionProps = new SessionProperties()
                 {
                     Host = host,
                     VPNName = vpnName,
                     AuthenticationScheme = auth.Scheme,
-
                     UserName = auth.Username,
                     Password = auth.Password,
-
-                    OAuth2AccessToken = oauth2.GetToken(auth),
                     SSLValidateCertificate = sslVerify,
                     SSLTrustStoreDir = "trustedca"
                 };
+
+                if (auth.Scheme == AuthenticationSchemes.OAUTH2)
+                {
+                    OAuth2 oauth2 = new OAuth2();
+                    sessionProps.OAuth2AccessToken = oauth2.GetToken(auth);
+                }
+                if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+                {
+                    try
+                    {
+                        sessionProps.SSLClientCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                            auth.ClientCertificateBytes,
+                            auth.KeystorePassphrase,
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable |
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.PersistKeySet |
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet
+                        );
+                    }
+                    catch
+                    {
+                        if (!string.IsNullOrEmpty(auth.ClientCertificatePem) && !string.IsNullOrEmpty(auth.ClientKeyPem))
+                        {
+                            sessionProps.SSLClientCertificate = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(
+                                auth.ClientCertificatePem,
+                                auth.ClientKeyPem
+                            );
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                }
 
                 _session = _context.CreateSession(sessionProps, null, null);
                 ReturnCode returnCode = _session.Connect();
@@ -205,61 +232,92 @@ namespace SolaceWebClient.Services
 
         public async Task DeleteMessage(string host, string vpnName, Authentication auth, string queueName, bool sslVerify, long adMessageId)
         {
-            _logger.LogInformation("Delete Message process started.");
-            try
+            await Task.Run(() =>
             {
-                OAuth2 oauth2 = new OAuth2();
-                SessionProperties sessionProps = new SessionProperties()
+                _logger.LogInformation("Delete Message process started.");
+                try
                 {
-                    Host = host,
-                    VPNName = vpnName,
-                    AuthenticationScheme = auth.Scheme,
-
-                    UserName = auth.Username,
-                    Password = auth.Password,
-
-                    OAuth2AccessToken = oauth2.GetToken(auth),
-                    ReconnectRetries = 3,
-                    SSLValidateCertificate = sslVerify,
-                    SSLTrustStoreDir = "trustedca"
-                };
-
-                _session = _context.CreateSession(sessionProps, null, null);
-                ReturnCode returnCode = _session.Connect();
-                if (returnCode != ReturnCode.SOLCLIENT_OK)
-                {
-                    _logger.LogError("Failed to connect to Solace broker with return code {returnCode}", returnCode);
-                    throw new Exception("Failed to connect to Solace broker.");
-                }
-
-                using (IQueue queue = ContextFactory.Instance.CreateQueue(queueName))
-                {
-                    BrowserProperties browserProps = new BrowserProperties()
+                    SessionProperties sessionProps = new SessionProperties()
                     {
-                        TransportWindowSize = 5,
-                        MaxReconnectTries = 5
+                        Host = host,
+                        VPNName = vpnName,
+                        AuthenticationScheme = auth.Scheme,
+                        UserName = auth.Username,
+                        Password = auth.Password,
+                        SSLValidateCertificate = sslVerify,
+                        SSLTrustStoreDir = "trustedca"
                     };
 
-                    using (IBrowser browser = _session.CreateBrowser(queue, browserProps))
+                    if (auth.Scheme == AuthenticationSchemes.OAUTH2)
                     {
-                        browser.Remove(adMessageId);
+                        OAuth2 oauth2 = new OAuth2();
+                        sessionProps.OAuth2AccessToken = oauth2.GetToken(auth);
+                    }
+                    if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+                    {
+                        try
+                        {
+                            sessionProps.SSLClientCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                                auth.ClientCertificateBytes,
+                                auth.KeystorePassphrase,
+                                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable |
+                                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.PersistKeySet |
+                                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet
+                            );
+                        }
+                        catch
+                        {
+                            if (!string.IsNullOrEmpty(auth.ClientCertificatePem) && !string.IsNullOrEmpty(auth.ClientKeyPem))
+                            {
+                                sessionProps.SSLClientCertificate = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(
+                                    auth.ClientCertificatePem,
+                                    auth.ClientKeyPem
+                                );
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
+                    }
+
+                    _session = _context.CreateSession(sessionProps, null, null);
+                    ReturnCode returnCode = _session.Connect();
+                    if (returnCode != ReturnCode.SOLCLIENT_OK)
+                    {
+                        _logger.LogError("Failed to connect to Solace broker with return code {returnCode}", returnCode);
+                        throw new Exception("Failed to connect to Solace broker.");
+                    }
+
+                    using (IQueue queue = ContextFactory.Instance.CreateQueue(queueName))
+                    {
+                        BrowserProperties browserProps = new BrowserProperties()
+                        {
+                            TransportWindowSize = 5,
+                            MaxReconnectTries = 5
+                        };
+
+                        using (IBrowser browser = _session.CreateBrowser(queue, browserProps))
+                        {
+                            browser.Remove(adMessageId);
+                        }
                     }
                 }
-            }
-            catch (OperationErrorException ex)
-            {
-                _logger.LogError("OperationErrorException: {ex}", ex);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Exception: {ex}", ex);
-                throw;
-            }
-            finally
-            {
-                Disconnect();
-            }
+                catch (OperationErrorException ex)
+                {
+                    _logger.LogError("OperationErrorException: {ex}", ex);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Exception: {ex}", ex);
+                    throw;
+                }
+                finally
+                {
+                    Disconnect();
+                }
+            });
         }
     }
 }

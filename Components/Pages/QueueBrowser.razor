@@ -3,6 +3,7 @@
 @using Blazorise
 @using Blazorise.DataGrid
 @using SolaceSystems.Solclient.Messaging
+@using Microsoft.AspNetCore.Components.Forms
 @inject QueueBrowserService QueueBrowserService
 @inject ILogger<QueueBrowser> Logger
 @inject Blazored.Toast.Services.IToastService toastService
@@ -12,7 +13,7 @@
 @inject IJSRuntime JSRuntime
 
 <Layout>
-    <Title>Queue Browser</Title>
+        <Title>Queue Browser</Title>
 
     <div class="form-group">
         <Dropdown @ref="presetDropdown">
@@ -91,11 +92,18 @@
     else if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
     {
         <div class="form-group" id="clientCertInputs">
-            <label for="keystorePath">Keystore Path:</label>
-            <input type="text" id="keystorePath" @bind="auth.KeystorePath" />
-
+            <label for="clientCertUpload">Client Certificate (PFX/P12):</label>
+            <InputFile id="clientCertUpload" OnChange="OnClientCertUpload" />
             <label for="keystorePassphrase">Keystore Passphrase:</label>
             <input type="password" id="keystorePassphrase" @bind="auth.KeystorePassphrase" />
+            <p />
+            <div style="border:1px solid white">
+                <small>Alternative: PEM-Upload (Certificate & Key)</small>
+                <label for="clientCertPemUpload">Client Certificate (PEM):</label>
+                <InputFile id="clientCertPemUpload" OnChange="OnClientCertPemUpload" accept=".pem,.crt" />
+                <label for="clientKeyPemUpload">Client Key (PEM):</label>
+                <InputFile id="clientKeyPemUpload" OnChange="OnClientKeyPemUpload" accept=".pem,.key" />
+            </div>
         </div>
     }
     else if (auth.Scheme == AuthenticationSchemes.OAUTH2)
@@ -205,21 +213,19 @@
 </Layout>
 
 @code {
-    private string host;
-    private string vpnName;
-    private string username;
-    private string password;
-    private string queueName;
+    private string? host;
+    private string? vpnName;
+    private string? queueName;
     private int maxMessages = 50;
     private bool sslVerify = true;
     private List<MessageDetails> messages = new List<MessageDetails>();
-    private DataGrid<MessageDetails> dataGrid;
+    private DataGrid<MessageDetails>? dataGrid;
 
     private string selectedPreset = "Select Preset";
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
     private List<PresetModel> ungroupedPresets = new List<PresetModel>();
-    Dropdown presetDropdown;
-    Dropdown authDropdown;
+    Dropdown? presetDropdown;
+    Dropdown? authDropdown;
 
     private bool isBrowsing = false;
 
@@ -241,10 +247,15 @@
                 break;
         }
 
-        return authDropdown.Hide();
+        return authDropdown?.Hide() ?? Task.CompletedTask;
     }
     private async Task BrowseQueueAsync()
     {
+        if (host == null || vpnName == null || queueName == null)
+        {
+            toastService.ShowError("Host, VPN-Name or Queue cannot be empty.");
+            return;
+        }
         try
         {
             isBrowsing = true;
@@ -269,6 +280,11 @@
 
     private async Task DeleteMessage(long adMessageId)
     {
+        if (host == null || vpnName == null || queueName == null)
+        {
+            toastService.ShowError("Host, VPN-Name or Queue cannot be empty.");
+            return;
+        }
         if (await MessageService.Confirm("Are you sure you want to delete message with ID: " + adMessageId + " ?", "Confirmation"))
         {
             try
@@ -306,27 +322,17 @@
 
         if (queryParams.TryGetValue("host", out var hostValue))
         {
-            host = hostValue;
+            host = hostValue.ToString();
         }
 
         if (queryParams.TryGetValue("vpn", out var vpnValue))
         {
-            vpnName = vpnValue;
+            vpnName = vpnValue.ToString();
         }
 
         if (queryParams.TryGetValue("queue", out var queueValue))
         {
-            queueName = queueValue;
-        }
-
-        if (queryParams.TryGetValue("username", out var usernameValue))
-        {
-            auth.Username = usernameValue;
-        }
-
-        if (queryParams.TryGetValue("hostname", out var hostnameValue))
-        {
-            host = hostnameValue;
+            queueName = queueValue.ToString();
         }
 
         auth.Password = string.Empty;
@@ -349,11 +355,13 @@
 
     Task HideDropdownMenu()
     {
-        return presetDropdown.Hide();
+        return presetDropdown?.Hide() ?? Task.CompletedTask;
     }
 
     private async Task DownloadFileAsync(MessageDetails message)
     {
+        if (string.IsNullOrEmpty(message.MessageContent))
+            return;
         var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContent);
         var base64 = Convert.ToBase64String(byteArray);
         var fileContent = $"data:text/plain;base64,{base64}";
@@ -364,6 +372,8 @@
     }
     private async Task DownloadFileXMLAsync(MessageDetails message)
     {
+        if (string.IsNullOrEmpty(message.MessageContentXML))
+            return;
         var byteArray = System.Text.Encoding.UTF8.GetBytes(message.MessageContentXML);
         var base64 = Convert.ToBase64String(byteArray);
         var fileContent = $"data:text/plain;base64,{base64}";
@@ -371,6 +381,40 @@
         var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".xml";
 
         await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
+    }
+
+    private async Task OnClientCertUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(1024 * 1024 * 5);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            auth.ClientCertificateBytes = ms.ToArray();
+        }
+    }
+    private async Task OnClientCertPemUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(1024 * 1024 * 2);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            auth.ClientCertificatePem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
+    }
+    private async Task OnClientKeyPemUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(1024 * 1024 * 2);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            auth.ClientKeyPem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
     }
 
 }
