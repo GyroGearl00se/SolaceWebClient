@@ -17,10 +17,9 @@ namespace SolaceWebClient.Services
         public SolaceSubscribeService(ILogger<SolaceSubscribeService> logger)
         {
             _logger = logger;
-            
         }
 
-        public void SubscribeToTopic(string host, string vpnName, string username, string password, string topic, bool sslVerify, Action<MessageDetails> messageHandler)
+        public void SubscribeToTopic(string host, string vpnName, Authentication auth, string topic, bool sslVerify, Action<MessageDetails> messageHandler)
         {
             try
             {
@@ -41,11 +40,36 @@ namespace SolaceWebClient.Services
                 {
                     Host = host,
                     VPNName = vpnName,
-                    UserName = username,
-                    Password = password,
+                    UserName = auth.Username,
+                    Password = auth.Password,
                     SSLValidateCertificate = sslVerify,
                     SSLTrustStoreDir = "trustedca"
                 };
+
+                // mTLS Support
+                if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+                {
+                    if (auth.ClientCertificateBytes != null && auth.ClientCertificateBytes.Length > 0)
+                    {
+                        sessionProps.SSLClientCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                            auth.ClientCertificateBytes,
+                            auth.KeystorePassphrase,
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable |
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.PersistKeySet |
+                            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet
+                        );
+                    }
+                    else if (!string.IsNullOrWhiteSpace(auth.ClientCertificatePem) && !string.IsNullOrWhiteSpace(auth.ClientKeyPem))
+                    {
+                        var cert = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(auth.ClientCertificatePem, auth.ClientKeyPem);
+                        if (!string.IsNullOrEmpty(auth.KeystorePassphrase))
+                        {
+                            cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(cert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx, auth.KeystorePassphrase), auth.KeystorePassphrase,
+                                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable | System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
+                        }
+                        sessionProps.SSLClientCertificate = cert;
+                    }
+                }
 
                 _session = _context.CreateSession(sessionProps, (source, args) => HandleMessage(source, args, messageHandler), null);
                 ReturnCode returnCode = _session.Connect();

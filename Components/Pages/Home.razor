@@ -1,5 +1,6 @@
 ﻿@page "/"
 @rendermode InteractiveServer
+@using SolaceSystems.Solclient.Messaging
 @using SolaceWebClient.Services
 @using Blazorise
 @using Blazorise.DataGrid
@@ -54,14 +55,82 @@
             <label>VPN Name</label>
             <input @bind="publishVpnName" name="publishVpnName" autocomplete="on" placeholder="default" />
         </div>
+
         <div class="form-group">
-            <label>Username</label>
-            <input @bind="publishUsername" name="publishUsername" autocomplete="on" placeholder="Username" />
+            <Dropdown @ref="pubAuthDropdown">
+                <DropdownToggle Color="Color.Primary">
+                    @pubAuth.Scheme
+                </DropdownToggle>
+                <DropdownMenu>
+                    <DropdownItem Clicked="@(() => OnPubAuthSchemeChanged("BASIC"))">BasicAuth</DropdownItem>
+                    <DropdownItem Clicked="@(() => OnPubAuthSchemeChanged("CLIENT_CERTIFICATE"))">ClientCertificate</DropdownItem>
+                    <DropdownItem Clicked="@(() => OnPubAuthSchemeChanged("OAUTH2"))">OAuth2</DropdownItem>
+                </DropdownMenu>
+            </Dropdown>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input @bind="publishPassword" name="publishPassword" type="password" autocomplete="on" placeholder="Password" />
-        </div>
+        @if (pubAuth.Scheme == AuthenticationSchemes.BASIC)
+        {
+            <div class="form-group" id="basicInputs">
+                <label for="username">Username:</label>
+                <input type="text" id="username" @bind="pubAuth.Username" />
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" @bind="pubAuth.Password" />
+            </div>
+        }
+        else if (pubAuth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+        {
+            <div class="form-group" id="clientCertInputs">
+                <label for="clientCertUpload">Client Certificate (PFX/P12):</label>
+                <Field>
+                    <FileEdit Id="clientCertUpload"
+                              MaxFileSize="5242880"
+                              AutoReset="false"
+                              Changed="@OnPubClientCertUpload"
+                              Filter=".p12, .pfx" />
+                </Field>
+
+                <label for="keystorePassphrase">Keystore Passphrase:</label>
+                <input type="password" id="keystorePassphrase" @bind="pubAuth.KeystorePassphrase" />
+                <p />
+                <div style="border:1px solid white">
+                    <small>Alternative: PEM-Upload (Certificate & Key)</small>
+                    <label for="clientCertPemUpload">Client Certificate (PEM):</label>
+                    <Field>
+                        <FileEdit Id="clientCertPemUpload"
+                                  MaxFileSize="2097152"
+                                  AutoReset="false"
+                                  Changed="@OnPubClientCertPemUpload"
+                                  Filter=".pem, .crt" />
+                    </Field>
+                    <label for="clientKeyPemUpload">Client Key (PEM):</label>
+                    <Field>
+                        <FileEdit Id="clientKeyPemUpload"
+                                  MaxFileSize="2097152"
+                                  AutoReset="false"
+                                  Changed="@OnPubClientKeyPemUpload"
+                                  Filter=".pem, .key" />
+                    </Field>
+                </div>
+            </div>
+        }
+        else if (pubAuth.Scheme == AuthenticationSchemes.OAUTH2)
+        {
+            <div class="form-group" id="oauthInputs">
+                <label for="clientId">Client ID:</label>
+                <input type="text" id="clientId" @bind="pubAuth.ClientId" />
+
+                <label for="clientSecret">Client Secret:</label>
+                <input type="password" id="clientSecret" @bind="pubAuth.ClientSecret" />
+
+                <label for="scope">Scope:</label>
+                <input type="text" id="scope" @bind="pubAuth.Scope" />
+
+                <label for="issuerUri">Issuer URI:</label>
+                <input type="text" id="issuerUri" @bind="pubAuth.IssuerUri" />
+            </div>
+        }
+
         <div class="form-group">
             <label>Topic</label>
             <input @bind="publishTopic" name="publishTopic" autocomplete="on" placeholder="topic" />
@@ -114,14 +183,82 @@
             <label>VPN Name</label>
             <input @bind="subscribeVpnName" name="subscribeVpnName" autocomplete="on" placeholder="default" />
         </div>
+
         <div class="form-group">
-            <label>Username</label>
-            <input @bind="subscribeUsername" name="subscribeUsername" autocomplete="on" placeholder="Username" />
+            <Dropdown @ref="subAuthDropdown">
+                <DropdownToggle Color="Color.Primary">
+                    @subAuth.Scheme
+                </DropdownToggle>
+                <DropdownMenu>
+                    <DropdownItem Clicked="@(() => OnSubAuthSchemeChanged("BASIC"))">BasicAuth</DropdownItem>
+                    <DropdownItem Clicked="@(() => OnSubAuthSchemeChanged("CLIENT_CERTIFICATE"))">ClientCertificate</DropdownItem>
+                    <DropdownItem Clicked="@(() => OnSubAuthSchemeChanged("OAUTH2"))">OAuth2</DropdownItem>
+                </DropdownMenu>
+            </Dropdown>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input @bind="subscribePassword" name="subscribePassword" type="password" autocomplete="on" placeholder="Password" />
-        </div>
+        @if (subAuth.Scheme == AuthenticationSchemes.BASIC)
+        {
+            <div class="form-group" id="basicInputs">
+                <label for="username">Username:</label>
+                <input type="text" id="username" @bind="subAuth.Username" />
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" @bind="subAuth.Password" />
+            </div>
+        }
+        else if (subAuth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
+        {
+            <div class="form-group" id="clientCertInputs">
+                <label for="clientCertUpload">Client Certificate (PFX/P12):</label>
+                <Field>
+                    <FileEdit Id="clientCertUpload"
+                              MaxFileSize="5242880"
+                              AutoReset="false"
+                              Changed="@OnSubClientCertUpload"
+                              Filter=".p12, .pfx" />
+                </Field>
+
+                <label for="keystorePassphrase">Keystore Passphrase:</label>
+                <input type="password" id="keystorePassphrase" @bind="subAuth.KeystorePassphrase" />
+                <p />
+                <div style="border:1px solid white">
+                    <small>Alternative: PEM-Upload (Certificate & Key)</small>
+                    <label for="clientCertPemUpload">Client Certificate (PEM):</label>
+                    <Field>
+                        <FileEdit Id="clientCertPemUpload"
+                                  MaxFileSize="2097152"
+                                  AutoReset="false"
+                                  Changed="@OnSubClientCertPemUpload"
+                                  Filter=".pem, .crt" />
+                    </Field>
+                    <label for="clientKeyPemUpload">Client Key (PEM):</label>
+                    <Field>
+                        <FileEdit Id="clientKeyPemUpload"
+                                  MaxFileSize="2097152"
+                                  AutoReset="false"
+                                  Changed="@OnSubClientKeyPemUpload"
+                                  Filter=".pem, .key" />
+                    </Field>
+                </div>
+            </div>
+        }
+        else if (subAuth.Scheme == AuthenticationSchemes.OAUTH2)
+        {
+            <div class="form-group" id="oauthInputs">
+                <label for="clientId">Client ID:</label>
+                <input type="text" id="clientId" @bind="subAuth.ClientId" />
+
+                <label for="clientSecret">Client Secret:</label>
+                <input type="password" id="clientSecret" @bind="subAuth.ClientSecret" />
+
+                <label for="scope">Scope:</label>
+                <input type="text" id="scope" @bind="subAuth.Scope" />
+
+                <label for="issuerUri">Issuer URI:</label>
+                <input type="text" id="issuerUri" @bind="subAuth.IssuerUri" />
+            </div>
+        }
+
         <div class="form-group">
             <label>Topic</label>
             <input @bind="subscribeTopic" name="subscribeTopic" autocomplete="on" placeholder="topic" />
@@ -238,11 +375,56 @@
     private string selectedSubPreset = "Select Preset";
     Dropdown pubPresetDropdown;
     Dropdown subPresetDropdown;
+    Dropdown? pubAuthDropdown;
+    Dropdown? subAuthDropdown;
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
     private List<PresetModel> ungroupedPresets = new List<PresetModel>();
 
     private DataGrid<MessageDetails> dataGrid;
     private List<MessageDetails> messages = new List<MessageDetails>();
+
+    private Authentication pubAuth = new Authentication();
+
+    private Task OnPubAuthSchemeChanged(string scheme)
+    {
+        switch (scheme)
+        {
+            case "CLIENT_CERTIFICATE":
+                pubAuth.Scheme = AuthenticationSchemes.CLIENT_CERTIFICATE;
+                break;
+            case "OAUTH2":
+                pubAuth.Scheme = AuthenticationSchemes.OAUTH2;
+                break;
+            case "BASIC":
+            default:
+                pubAuth.Scheme = AuthenticationSchemes.BASIC;
+                break;
+        }
+
+        return pubAuthDropdown?.Hide() ?? Task.CompletedTask;
+    }
+
+    private Authentication subAuth = new Authentication();
+
+    private Task OnSubAuthSchemeChanged(string scheme)
+    {
+        switch (scheme)
+        {
+            case "CLIENT_CERTIFICATE":
+                subAuth.Scheme = AuthenticationSchemes.CLIENT_CERTIFICATE;
+                break;
+            case "OAUTH2":
+                subAuth.Scheme = AuthenticationSchemes.OAUTH2;
+                break;
+            case "BASIC":
+            default:
+                subAuth.Scheme = AuthenticationSchemes.BASIC;
+                break;
+        }
+
+        return subAuthDropdown?.Hide() ?? Task.CompletedTask;
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -286,7 +468,7 @@
     {
         try
         {
-            PublishService.PublishMessage(publishHost, publishVpnName, publishUsername, publishPassword, publishTopic, publishMessage, publishSslVerify);
+            PublishService.PublishMessage(publishHost, publishVpnName, pubAuth, publishTopic, publishMessage, publishSslVerify);
             toastService.ShowSuccess("Successfully published message");
         }
         catch (SolaceSystems.Solclient.Messaging.OperationErrorException ex)
@@ -299,7 +481,7 @@
     {
         try
         {
-            SubscribeService.SubscribeToTopic(subscribeHost, subscribeVpnName, subscribeUsername, subscribePassword, subscribeTopic, subscribeSslVerify, message =>
+            SubscribeService.SubscribeToTopic(subscribeHost, subscribeVpnName, subAuth, subscribeTopic, subscribeSslVerify, message =>
             {
                 InvokeAsync(() =>
                 {
@@ -367,5 +549,77 @@
         var fileName = message.DestinationName + "-" + timenow.ToString("yyyyMMdd-HHmmss") + ".xml";
 
         await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, fileContent);
+    }
+
+    private async Task OnPubClientCertUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            pubAuth.ClientCertificateBytes = ms.ToArray();
+        }
+    }
+
+    private async Task OnPubClientCertPemUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            pubAuth.ClientCertificatePem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
+    }
+
+    private async Task OnPubClientKeyPemUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            pubAuth.ClientKeyPem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
+    }
+
+    private async Task OnSubClientCertUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            subAuth.ClientCertificateBytes = ms.ToArray();
+        }
+    }
+
+    private async Task OnSubClientCertPemUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            subAuth.ClientCertificatePem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
+    }
+
+    private async Task OnSubClientKeyPemUpload(FileChangedEventArgs e)
+    {
+        var file = e.Files.FirstOrDefault();
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            subAuth.ClientKeyPem = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        }
     }
 }
