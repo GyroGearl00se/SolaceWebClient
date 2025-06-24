@@ -357,24 +357,24 @@
 
 
 @code {
-    private string publishHost;
-    private string publishVpnName;
-    private string publishUsername;
-    private string publishPassword;
-    private string publishTopic;
-    private string publishMessage;
+    private string? publishHost;
+    private string? publishVpnName;
+    private string? publishUsername;
+    private string? publishPassword;
+    private string? publishTopic;
+    private string? publishMessage;
     private bool publishSslVerify = true;
-    private string subscribeHost;
-    private string subscribeVpnName;
-    private string subscribeUsername;
-    private string subscribePassword;
-    private string subscribeTopic;
+    private string? subscribeHost;
+    private string? subscribeVpnName;
+    private string? subscribeUsername;
+    private string? subscribePassword;
+    private string? subscribeTopic;
     private bool subscribeSslVerify = true;
 
     private string selectedPubPreset = "Select Preset";
     private string selectedSubPreset = "Select Preset";
-    Dropdown pubPresetDropdown;
-    Dropdown subPresetDropdown;
+    Dropdown? pubPresetDropdown;
+    Dropdown? subPresetDropdown;
     Dropdown? pubAuthDropdown;
     Dropdown? subAuthDropdown;
     private List<PresetGroupModel> presetGroups = new List<PresetGroupModel>();
@@ -438,7 +438,7 @@
         {
             publishHost = preset.Host;
             publishVpnName = preset.VpnName;
-            publishUsername = preset.Username;
+            pubAuth.Username = preset.Username;
             publishTopic = preset.Topic;
             selectedPubPreset = preset.Name;
 
@@ -454,7 +454,7 @@
         {
             subscribeHost = preset.Host;
             subscribeVpnName = preset.VpnName;
-            subscribeUsername = preset.Username;
+            subAuth.Username = preset.Username;
             subscribeTopic = preset.Topic;
             selectedSubPreset = preset.Name;
 

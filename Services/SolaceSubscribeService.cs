@@ -10,8 +10,8 @@ namespace SolaceWebClient.Services
 {
     public class SolaceSubscribeService : IDisposable
     {
-        private IContext _context;
-        private ISession _session;
+        private IContext? _context;
+        private ISession? _session;
         private readonly ILogger<SolaceSubscribeService> _logger;
 
         public SolaceSubscribeService(ILogger<SolaceSubscribeService> logger)
