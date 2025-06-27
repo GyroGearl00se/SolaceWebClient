@@ -33,12 +33,18 @@ namespace SolaceWebClient.Services
                 {
                     Host = host,
                     VPNName = vpnName,
+                    AuthenticationScheme = auth.Scheme,
                     UserName = auth.Username,
                     Password = auth.Password,
                     SSLValidateCertificate = sslVerify,
                     SSLTrustStoreDir = "trustedca"
                 };
 
+                if (auth.Scheme == AuthenticationSchemes.OAUTH2)
+                {
+                    OAuth2 oauth2 = new OAuth2();
+                    sessionProps.OAuth2AccessToken = oauth2.GetToken(auth);
+                }
                 // mTLS Support
                 if (auth.Scheme == AuthenticationSchemes.CLIENT_CERTIFICATE)
                 {
