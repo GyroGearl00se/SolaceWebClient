@@ -1,3 +1,15 @@
+<div align="center">
+  <a href="https://github.com/solacecommunity/solace-web-client">
+    <img 
+      src="https://img.shields.io/badge/This_project_continues_here-Click-red" 
+      width="80%" 
+      title="Project moved" 
+      alt="Project moved badge" />
+  </a>
+</div>
+
+
+
 # SolaceWebClient
 <img src="wwwroot/favicon.png" width="30%">
 
